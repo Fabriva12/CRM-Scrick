@@ -188,7 +188,7 @@ export function ClienteForm({ cliente, action }: ClienteFormProps) {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between gap-4">
+        <CardFooter className="flex flex-col-reverse justify-between gap-4 sm:flex-row">
           <Button
             type="button"
             variant="outline"

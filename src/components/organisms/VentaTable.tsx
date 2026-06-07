@@ -43,7 +43,7 @@ export function VentaTable({ ventas }: VentaTableProps) {
   function formatCurrency(value: number) {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
-      currency: 'MXN',
+      currency: 'CRC',
     }).format(value);
   }
 
@@ -54,8 +54,8 @@ export function VentaTable({ ventas }: VentaTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Cliente</TableHead>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Estado</TableHead>
+              <TableHead className="hidden sm:table-cell">Fecha</TableHead>
+              <TableHead className="hidden sm:table-cell">Estado</TableHead>
               <TableHead className="text-right">Monto Total</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
@@ -71,10 +71,10 @@ export function VentaTable({ ventas }: VentaTableProps) {
                     {venta.clientes?.nombre ?? 'Cliente desconocido'}
                   </Link>
                 </TableCell>
-                <TableCell className="text-muted-foreground whitespace-nowrap">
+                <TableCell className="hidden sm:table-cell text-muted-foreground whitespace-nowrap">
                   {formatDate(venta.fecha)}
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden sm:table-cell">
                   <VentaEstadoBadge estado={venta.estado} />
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
@@ -85,6 +85,7 @@ export function VentaTable({ ventas }: VentaTableProps) {
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      className="max-sm:size-11"
                       render={<Link href={`/ventas/${venta.id}`} />}
                     >
                       <Eye className="size-4" />
@@ -93,6 +94,7 @@ export function VentaTable({ ventas }: VentaTableProps) {
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      className="max-sm:size-11"
                       render={<Link href={`/ventas/${venta.id}/editar`} />}
                     >
                       <Pencil className="size-4" />
@@ -101,6 +103,7 @@ export function VentaTable({ ventas }: VentaTableProps) {
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      className="max-sm:size-11"
                       onClick={() => handleDeleteClick(venta)}
                     >
                       <Trash2 className="size-4" />

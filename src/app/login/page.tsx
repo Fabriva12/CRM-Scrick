@@ -8,7 +8,7 @@ export default function LoginPage() {
           <img
             src="/logo.png"
             alt="Scrick"
-            className="mx-auto h-28 w-auto object-contain brightness-0 invert"
+            className="mx-auto h-16 w-auto object-contain brightness-0 invert sm:h-28"
           />
           <p className="mt-3 text-sm text-scrick-latte/60">
             Inicia sesión para continuar

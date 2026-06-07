@@ -12,7 +12,7 @@ interface DashboardCardsProps {
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
-    currency: 'MXN',
+    currency: 'CRC',
   }).format(value);
 }
 
@@ -33,7 +33,7 @@ export function DashboardCards({
       {/* Clientes */}
       <div className="rounded-xl bg-[#FEA372]/15 p-5 ring-1 ring-[#FEA372]/30">
         <span className="text-2xl">👥</span>
-        <p className="mt-2 text-3xl font-bold tabular-nums text-[#2F3031]">
+        <p className="mt-2 text-xl font-bold tabular-nums sm:text-3xl text-[#2F3031]">
           {formatNumber(totalClientes)}
         </p>
         <p className="mt-1 text-sm text-[#2F3031]/60">Clientes registrados</p>
@@ -42,7 +42,7 @@ export function DashboardCards({
       {/* Ventas del mes */}
       <div className="rounded-xl bg-blue-50 p-5 ring-1 ring-blue-200">
         <span className="text-2xl">📈</span>
-        <p className="mt-2 text-3xl font-bold tabular-nums text-[#2F3031]">
+        <p className="mt-2 text-xl font-bold tabular-nums sm:text-3xl text-[#2F3031]">
           {formatCurrency(ventasDelMes)}
         </p>
         <p className="mt-1 text-sm text-[#2F3031]/60">Ventas del mes</p>
@@ -51,7 +51,7 @@ export function DashboardCards({
       {/* Ingresos totales */}
       <div className="rounded-xl bg-[#FEA372]/15 p-5 ring-1 ring-[#FEA372]/30">
         <span className="text-2xl">💰</span>
-        <p className="mt-2 text-3xl font-bold tabular-nums text-[#2F3031]">
+        <p className="mt-2 text-xl font-bold tabular-nums sm:text-3xl text-[#2F3031]">
           {formatCurrency(ingresosTotales)}
         </p>
         <p className="mt-1 text-sm text-[#2F3031]/60">Ingresos totales</p>
@@ -60,7 +60,7 @@ export function DashboardCards({
       {/* Por cobrar */}
       <div className="rounded-xl bg-amber-50 p-5 ring-1 ring-amber-200">
         <span className="text-2xl">🕐</span>
-        <p className="mt-2 text-3xl font-bold tabular-nums text-[#2F3031]">
+        <p className="mt-2 text-xl font-bold tabular-nums sm:text-3xl text-[#2F3031]">
           {formatCurrency(pendientesTotal)}
         </p>
         <p className="mt-1 text-sm text-[#2F3031]/60">
@@ -82,7 +82,7 @@ export function DashboardCards({
       >
         <span className="text-2xl">✅</span>
         <p
-          className={`mt-2 text-3xl font-bold tabular-nums ${
+          className={`mt-2 text-xl font-bold tabular-nums sm:text-3xl ${
             balanceNeto >= 0
               ? 'text-green-700'
               : 'text-red-700'
