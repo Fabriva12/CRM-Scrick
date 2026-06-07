@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from '@/actions/auth';
+import { cn } from '@/lib/utils';
 
 const links = [
   { href: '/', label: 'Dashboard', icon: '📊' },
@@ -12,11 +13,22 @@ const links = [
   { href: '/finanzas', label: 'Finanzas', icon: '💳' },
 ];
 
-export function Sidebar() {
+export function Sidebar({
+  className,
+  onClose,
+}: {
+  className?: string;
+  onClose?: () => void;
+}) {
   const pathname = usePathname();
 
   return (
-    <aside className="flex w-64 flex-col bg-scrick-charcoal text-scrick-latte">
+    <aside
+      className={cn(
+        'flex flex-col bg-scrick-charcoal text-scrick-latte',
+        className
+      )}
+    >
       {/* Logo */}
       <div className="flex items-center px-6 py-4">
         <img
@@ -37,6 +49,7 @@ export function Sidebar() {
             <Link
               key={link.href}
               href={link.href}
+              onClick={onClose}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive
                   ? 'bg-scrick-salmon text-scrick-charcoal'

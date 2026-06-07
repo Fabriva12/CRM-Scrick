@@ -20,26 +20,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { VentaEstadoBadge } from '@/components/molecules/VentaEstadoBadge';
 import { DeleteVentaDialog } from '@/components/organisms/DeleteVentaDialog';
+import { DetailRow } from '@/components/molecules/DetailRow';
 import type { VentaWithDetails } from '@/lib/types/ventas';
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 
 interface VentaDetailCardProps {
   venta: VentaWithDetails;
-}
-
-function DetailRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | null;
-}) {
-  return (
-    <div className="grid grid-cols-[120px_1fr] gap-2 py-2 text-sm border-b border-border/50 last:border-0">
-      <span className="font-medium text-muted-foreground">{label}</span>
-      <span>{value || '—'}</span>
-    </div>
-  );
 }
 
 function formatDate(dateStr: string) {
@@ -53,7 +39,7 @@ function formatDate(dateStr: string) {
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
-    currency: 'MXN',
+    currency: 'CRC',
   }).format(value);
 }
 
@@ -157,7 +143,7 @@ export function VentaDetailCard({ venta }: VentaDetailCardProps) {
             )}
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between gap-4">
+        <CardFooter className="flex flex-col-reverse justify-between gap-4 sm:flex-row">
           <Button variant="outline" render={<Link href="/ventas" />}>
             <ArrowLeft className="size-4" />
             Volver

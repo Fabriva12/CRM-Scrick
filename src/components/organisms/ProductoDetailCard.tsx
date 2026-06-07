@@ -11,20 +11,12 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DeleteProductoDialog } from '@/components/organisms/DeleteProductoDialog';
+import { DetailRow } from '@/components/molecules/DetailRow';
 import type { Producto } from '@/lib/types/productos';
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 
 interface ProductoDetailCardProps {
   producto: Producto;
-}
-
-function DetailRow({ label, value }: { label: string; value: string | null }) {
-  return (
-    <div className="grid grid-cols-[120px_1fr] gap-2 py-2 text-sm border-b border-border/50 last:border-0">
-      <span className="font-medium text-muted-foreground">{label}</span>
-      <span>{value || '—'}</span>
-    </div>
-  );
 }
 
 function formatDate(dateStr: string) {
@@ -41,7 +33,7 @@ function formatCurrency(value: number | null) {
   if (value === null) return '—';
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
-    currency: 'MXN',
+    currency: 'CRC',
   }).format(value);
 }
 
@@ -80,7 +72,7 @@ export function ProductoDetailCard({ producto }: ProductoDetailCardProps) {
             />
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between gap-4">
+        <CardFooter className="flex flex-col-reverse justify-between gap-4 sm:flex-row">
           <Button variant="outline" render={<Link href="/productos" />}>
             <ArrowLeft className="size-4" />
             Volver

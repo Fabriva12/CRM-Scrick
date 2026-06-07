@@ -41,7 +41,7 @@ export function ProductoTable({ productos }: ProductoTableProps) {
   function formatCurrency(value: number) {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
-      currency: 'MXN',
+      currency: 'CRC',
     }).format(value);
   }
 
@@ -52,11 +52,11 @@ export function ProductoTable({ productos }: ProductoTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>
-              <TableHead>SKU</TableHead>
+              <TableHead className="hidden sm:table-cell">SKU</TableHead>
               <TableHead>Precio Venta</TableHead>
               <TableHead>Stock</TableHead>
-              <TableHead>Unidad</TableHead>
-              <TableHead>Creado</TableHead>
+              <TableHead className="hidden sm:table-cell">Unidad</TableHead>
+              <TableHead className="hidden sm:table-cell">Creado</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -71,7 +71,7 @@ export function ProductoTable({ productos }: ProductoTableProps) {
                     {producto.nombre}
                   </Link>
                 </TableCell>
-                <TableCell className="text-muted-foreground">
+                <TableCell className="hidden sm:table-cell text-muted-foreground">
                   {producto.sku || '—'}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
@@ -80,10 +80,10 @@ export function ProductoTable({ productos }: ProductoTableProps) {
                 <TableCell className="text-muted-foreground">
                   {producto.stock}
                 </TableCell>
-                <TableCell className="text-muted-foreground">
+                <TableCell className="hidden sm:table-cell text-muted-foreground">
                   {producto.unidad || '—'}
                 </TableCell>
-                <TableCell className="text-muted-foreground whitespace-nowrap">
+                <TableCell className="hidden sm:table-cell text-muted-foreground whitespace-nowrap">
                   {formatDate(producto.created_at)}
                 </TableCell>
                 <TableCell className="text-right">
@@ -91,6 +91,7 @@ export function ProductoTable({ productos }: ProductoTableProps) {
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      className="max-sm:size-11"
                       render={<Link href={`/productos/${producto.id}`} />}
                     >
                       <Eye className="size-4" />
@@ -99,6 +100,7 @@ export function ProductoTable({ productos }: ProductoTableProps) {
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      className="max-sm:size-11"
                       render={<Link href={`/productos/${producto.id}/editar`} />}
                     >
                       <Pencil className="size-4" />
@@ -107,6 +109,7 @@ export function ProductoTable({ productos }: ProductoTableProps) {
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      className="max-sm:size-11"
                       onClick={() => handleDeleteClick(producto)}
                     >
                       <Trash2 className="size-4" />

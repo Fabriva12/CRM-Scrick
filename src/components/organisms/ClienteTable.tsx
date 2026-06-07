@@ -47,9 +47,9 @@ export function ClienteTable({ clientes }: ClienteTableProps) {
             <TableRow>
               <TableHead>Nombre</TableHead>
               <TableHead>Tipo</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Ciudad</TableHead>
-              <TableHead>Creado</TableHead>
+              <TableHead className="hidden sm:table-cell">Email</TableHead>
+              <TableHead className="hidden sm:table-cell">Ciudad</TableHead>
+              <TableHead className="hidden sm:table-cell">Creado</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -67,13 +67,13 @@ export function ClienteTable({ clientes }: ClienteTableProps) {
                 <TableCell>
                   <ClienteBadge tipo={cliente.tipo} />
                 </TableCell>
-                <TableCell className="text-muted-foreground">
+                <TableCell className="hidden sm:table-cell text-muted-foreground">
                   {cliente.email}
                 </TableCell>
-                <TableCell className="text-muted-foreground">
+                <TableCell className="hidden sm:table-cell text-muted-foreground">
                   {cliente.ciudad || '—'}
                 </TableCell>
-                <TableCell className="text-muted-foreground whitespace-nowrap">
+                <TableCell className="hidden sm:table-cell text-muted-foreground whitespace-nowrap">
                   {formatDate(cliente.created_at)}
                 </TableCell>
                 <TableCell className="text-right">
@@ -81,6 +81,7 @@ export function ClienteTable({ clientes }: ClienteTableProps) {
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      className="max-sm:size-11"
                       render={<Link href={`/clientes/${cliente.id}`} />}
                     >
                       <Eye className="size-4" />
@@ -89,6 +90,7 @@ export function ClienteTable({ clientes }: ClienteTableProps) {
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      className="max-sm:size-11"
                       render={<Link href={`/clientes/${cliente.id}/editar`} />}
                     >
                       <Pencil className="size-4" />
@@ -97,6 +99,7 @@ export function ClienteTable({ clientes }: ClienteTableProps) {
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      className="max-sm:size-11"
                       onClick={() => handleDeleteClick(cliente)}
                     >
                       <Trash2 className="size-4" />

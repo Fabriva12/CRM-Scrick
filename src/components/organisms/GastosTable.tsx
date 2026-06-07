@@ -30,7 +30,7 @@ function formatDate(dateStr: string) {
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
-    currency: 'MXN',
+    currency: 'CRC',
   }).format(value);
 }
 
@@ -52,17 +52,17 @@ export function GastosTable({ gastos }: GastosTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Categoría</TableHead>
+              <TableHead className="hidden sm:table-cell">Categoría</TableHead>
               <TableHead>Descripción</TableHead>
               <TableHead className="text-right">Monto</TableHead>
-              <TableHead>Fecha</TableHead>
+              <TableHead className="hidden sm:table-cell">Fecha</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {gastos.map((gasto) => (
               <TableRow key={gasto.id}>
-                <TableCell>
+                <TableCell className="hidden sm:table-cell">
                   <span className="inline-flex items-center rounded-full bg-[#FEA372]/10 px-2.5 py-0.5 text-xs font-medium text-[#2F3031]">
                     {gasto.categoria}
                   </span>
@@ -78,7 +78,7 @@ export function GastosTable({ gastos }: GastosTableProps) {
                 <TableCell className="text-right tabular-nums text-red-600 dark:text-red-400">
                   {formatCurrency(gasto.monto)}
                 </TableCell>
-                <TableCell className="text-muted-foreground whitespace-nowrap">
+                <TableCell className="hidden sm:table-cell text-muted-foreground whitespace-nowrap">
                   {formatDate(gasto.fecha)}
                 </TableCell>
                 <TableCell className="text-right">
@@ -86,6 +86,7 @@ export function GastosTable({ gastos }: GastosTableProps) {
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      className="max-sm:size-11"
                       render={<Link href={`/finanzas/${gasto.id}`} />}
                     >
                       <Eye className="size-4" />
@@ -94,6 +95,7 @@ export function GastosTable({ gastos }: GastosTableProps) {
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      className="max-sm:size-11"
                       render={<Link href={`/finanzas/${gasto.id}/editar`} />}
                     >
                       <Pencil className="size-4" />
@@ -102,6 +104,7 @@ export function GastosTable({ gastos }: GastosTableProps) {
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      className="max-sm:size-11"
                       onClick={() => handleDeleteClick(gasto)}
                     >
                       <Trash2 className="size-4" />

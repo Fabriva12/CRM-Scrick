@@ -55,7 +55,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="font-heading text-3xl tracking-wide text-[#2F3031]">
+      <h1 className="font-heading text-3xl tracking-wide text-foreground">
         Dashboard
       </h1>
 

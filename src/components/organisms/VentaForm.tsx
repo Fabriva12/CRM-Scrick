@@ -416,7 +416,7 @@ export function VentaForm({
                                 updateRow(row.tempId, 'producto_id', e.target.value)
                               }
                               className={cn(
-                                'flex h-9 w-full min-w-[180px] rounded-md border border-input bg-transparent px-2 py-1 text-sm transition-colors',
+                                'flex h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-2 py-1 text-sm transition-colors sm:min-w-[180px]',
                                 'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
                               )}
                             >
@@ -556,7 +556,7 @@ export function VentaForm({
             <FieldError error={state?.errors?.notas} />
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between gap-4">
+        <CardFooter className="flex flex-col-reverse justify-between gap-4 sm:flex-row">
           <Button
             type="button"
             variant="outline"

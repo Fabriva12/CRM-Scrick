@@ -5,7 +5,7 @@ import type { ResumenFinanzas } from '@/lib/types/gastos';
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
-    currency: 'MXN',
+    currency: 'CRC',
   }).format(value);
 }
 
