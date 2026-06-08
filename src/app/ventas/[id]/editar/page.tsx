@@ -8,6 +8,8 @@ import type { VentaWithDetails } from '@/lib/types/ventas';
 
 export const dynamic = 'force-dynamic';
 
+const NOMBRES_RECETAS = ['Galleta Proteica Receta 1', 'Galleta Proteica Receta 2'];
+
 export default async function EditarVentaPage({
   params,
 }: {
@@ -32,7 +34,7 @@ export default async function EditarVentaPage({
     supabase
       .from('productos')
       .select('*')
-      .order('nombre', { ascending: true }),
+      .in('nombre', NOMBRES_RECETAS),
   ]);
 
   if (ventaResult.error || !ventaResult.data) {

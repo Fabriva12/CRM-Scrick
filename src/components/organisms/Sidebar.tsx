@@ -8,7 +8,8 @@ import { cn } from '@/lib/utils';
 const links = [
   { href: '/', label: 'Dashboard', icon: '📊' },
   { href: '/clientes', label: 'Clientes', icon: '👥' },
-  { href: '/productos', label: 'Productos', icon: '📦' },
+  { href: '/productos', label: 'Inventario', icon: '📦' },
+  { href: '/inventario', label: 'Producción', icon: '🏭' },
   { href: '/ventas', label: 'Ventas', icon: '🧾' },
   { href: '/finanzas', label: 'Finanzas', icon: '💳' },
 ];
@@ -30,11 +31,11 @@ export function Sidebar({
       )}
     >
       {/* Logo */}
-      <div className="flex items-center px-6 py-4">
+      <div className="flex items-center justify-center px-6 py-6">
         <img
           src="/logo.png"
           alt="Scrick"
-          className="h-14 w-auto object-contain brightness-0 invert"
+          className="h-24 w-auto object-contain brightness-0 invert"
         />
       </div>
 

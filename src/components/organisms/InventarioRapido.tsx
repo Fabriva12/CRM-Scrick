@@ -1,10 +1,12 @@
 'use client';
 
 interface ProductoInventario {
+  id: string;
   nombre: string;
   sku: string | null;
   stock: number;
   unidad: string | null;
+  costo: number | null;
 }
 
 interface InventarioRapidoProps {
@@ -30,17 +32,23 @@ export function InventarioRapido({ productos }: InventarioRapidoProps) {
               <tr className="border-b border-[#2F3031]/10 text-left text-xs text-[#2F3031]/50">
                 <th className="pb-2 pr-4 font-medium">Producto</th>
                 <th className="pb-2 pr-4 font-medium">SKU</th>
+                <th className="pb-2 pr-4 text-right font-medium">Costo</th>
                 <th className="pb-2 text-right font-medium">Stock</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#2F3031]/10">
-              {productos.map((producto, index) => (
-                <tr key={producto.sku ?? index} className="py-2">
+              {productos.map((producto) => (
+                <tr key={producto.id} className="py-2">
                   <td className="py-2 pr-4 text-[#2F3031]">
                     {producto.nombre}
                   </td>
                   <td className="py-2 pr-4 text-[#2F3031]/50">
                     {producto.sku || '—'}
+                  </td>
+                  <td className="py-2 pr-4 text-right tabular-nums text-[#2F3031]/50">
+                    {producto.costo
+                      ? `₡${Number(producto.costo).toLocaleString('es-CR')}`
+                      : '—'}
                   </td>
                   <td
                     className={`py-2 text-right tabular-nums font-medium ${

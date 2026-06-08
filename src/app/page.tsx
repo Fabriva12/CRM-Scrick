@@ -38,7 +38,7 @@ export default async function DashboardPage() {
       .limit(5),
     supabase
       .from('productos')
-      .select('nombre, sku, stock, unidad')
+      .select('id, nombre, sku, stock, unidad, costo')
       .order('stock', { ascending: true }),
   ]);
 

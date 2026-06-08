@@ -6,6 +6,8 @@ import type { Producto } from '@/lib/types/productos';
 
 export const dynamic = 'force-dynamic';
 
+const NOMBRES_RECETAS = ['Galleta Proteica Receta 1', 'Galleta Proteica Receta 2'];
+
 export default async function NuevaVentaPage() {
   const supabase = createServiceClient();
 
@@ -17,7 +19,7 @@ export default async function NuevaVentaPage() {
     supabase
       .from('productos')
       .select('*')
-      .order('nombre', { ascending: true }),
+      .in('nombre', NOMBRES_RECETAS),
   ]);
 
   if (clientesResult.error) {

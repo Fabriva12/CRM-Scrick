@@ -68,6 +68,33 @@ export async function deleteCliente(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = createServiceClient();
+
+  const { data: cliente } = await supabase
+    .from('clientes')
+    .select('nombre')
+    .eq('id', id)
+    .single();
+
+  if (!cliente) {
+    return { success: false, error: 'Cliente no encontrado' };
+  }
+
+  const { count, error: countError } = await supabase
+    .from('ventas')
+    .select('*', { count: 'exact', head: true })
+    .eq('cliente_id', id);
+
+  if (countError) {
+    return { success: false, error: 'Error al verificar ventas del cliente' };
+  }
+
+  if (count && count > 0) {
+    return {
+      success: false,
+      error: `No se puede eliminar "${cliente.nombre}" porque tiene ${count} venta${count === 1 ? '' : 's'} asociada${count === 1 ? '' : 's'}.`,
+    };
+  }
+
   const { error } = await supabase.from('clientes').delete().eq('id', id);
 
   if (error) {

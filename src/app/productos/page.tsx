@@ -1,11 +1,9 @@
-import Link from 'next/link';
 import { createServiceClient } from '@/lib/supabase/server';
 import { ProductoTable } from '@/components/organisms/ProductoTable';
-import { Button } from '@/components/ui/button';
+import { AjustarStockButton } from '@/components/organisms/AjustarStockButton';
 import { ExportButton } from '@/components/molecules/ExportButton';
-import { ProduccionActionButtons } from '@/components/organisms/ProduccionActionButtons';
 import type { Producto } from '@/lib/types/productos';
-import { Plus, Package } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 export const dynamic = 'force-dynamic';
@@ -15,24 +13,31 @@ export default async function ProductosPage() {
   const { data: productos, error } = await supabase
     .from('productos')
     .select('*')
-    .order('created_at', { ascending: false });
+    .order('nombre', { ascending: true });
 
   if (error) {
     throw new Error(`Error al cargar productos: ${error.message}`);
   }
 
-  const typedProductos = productos as unknown as Producto[];
+  const typedProductos = (productos as unknown as Producto[]).sort((a, b) => {
+    const aIsReceta = a.nombre.startsWith('Galleta Proteica Receta');
+    const bIsReceta = b.nombre.startsWith('Galleta Proteica Receta');
+    if (aIsReceta && !bIsReceta) return -1;
+    if (!aIsReceta && bIsReceta) return 1;
+    return a.nombre.localeCompare(b.nombre);
+  });
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-heading text-3xl tracking-wide">Productos</h1>
+          <h1 className="font-heading text-3xl tracking-wide">Inventario</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Gestiona tu catálogo de productos
+            Catálogo de ingredientes y productos
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <AjustarStockButton productos={typedProductos} />
           {typedProductos.length > 0 && (
             <ExportButton
               data={typedProductos as unknown as Record<string, unknown>[]}
@@ -49,11 +54,6 @@ export default async function ProductosPage() {
               filename="productos-scrick"
             />
           )}
-          <ProduccionActionButtons />
-          <Button render={<Link href="/productos/nuevo" />}>
-            <Plus className="size-4" />
-            Nuevo Producto
-          </Button>
         </div>
       </div>
 
@@ -63,12 +63,8 @@ export default async function ProductosPage() {
             <Package className="mb-4 size-12 text-muted-foreground/40" />
             <p className="mb-2 text-lg font-medium">No hay productos registrados</p>
             <p className="mb-6 text-sm text-muted-foreground">
-              Crea tu primer producto para empezar a gestionar tu catálogo.
+              Los productos se crean desde Inventario al producir galletas.
             </p>
-            <Button render={<Link href="/productos/nuevo" />}>
-              <Plus className="size-4" />
-              Crear primer producto
-            </Button>
           </CardContent>
         </Card>
       ) : (
