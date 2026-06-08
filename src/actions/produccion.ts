@@ -3,15 +3,12 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { RECETAS } from '@/lib/recetas';
 import { revalidatePath } from 'next/cache';
+import type { ProduccionHistorial } from '@/lib/types/produccion';
 
 export type ProducirResultado =
   | { success: true; message: string }
   | { success: false; error: string };
 
-/**
- * Produce galletas: descuenta el stock de los ingredientes y crea/aumenta
- * el stock del producto terminado en el catálogo.
- */
 export async function producir(
   recetaId: string,
   cantidad: number
@@ -27,7 +24,7 @@ export async function producir(
 
   const supabase = createServiceClient();
 
-  // 1. Buscar todos los productos (ingredientes) por nombre
+  // 1. Buscar ingredientes por nombre
   const { data: productos, error: prodError } = await supabase
     .from('productos')
     .select('id, nombre, stock')
@@ -44,7 +41,6 @@ export async function producir(
     };
   }
 
-  // Verificar que todos los ingredientes existen
   const faltantes = receta.ingredientes.filter(
     (ing) => !productos.some((p) => p.nombre === ing.nombre)
   );
@@ -74,7 +70,9 @@ export async function producir(
     };
   }
 
-  // 3. Buscar o crear el producto terminado en el catálogo
+  // 3. Buscar o crear el producto terminado
+  let productoId: string | undefined;
+
   const { data: prodExistente, error: prodExistError } = await supabase
     .from('productos')
     .select('id, stock')
@@ -88,10 +86,8 @@ export async function producir(
     };
   }
 
-  const productoId = prodExistente?.id;
-
-  if (productoId) {
-    // Ya existe — aumentar stock
+  if (prodExistente) {
+    productoId = prodExistente.id;
     const nuevoStockProd = prodExistente.stock + cantidad;
     const { error: updateProdError } = await supabase
       .from('productos')
@@ -105,8 +101,7 @@ export async function producir(
       };
     }
   } else {
-    // No existe — crearlo
-    const { error: insertProdError } = await supabase
+    const { data: nuevoProducto, error: insertProdError } = await supabase
       .from('productos')
       .insert({
         nombre: receta.producto_nombre,
@@ -114,17 +109,21 @@ export async function producir(
         costo: null,
         stock: cantidad,
         unidad: 'unid',
-      });
+      })
+      .select('id')
+      .single();
 
-    if (insertProdError) {
+    if (insertProdError || !nuevoProducto) {
       return {
         success: false,
-        error: `Error al crear "${receta.producto_nombre}": ${insertProdError.message}`,
+        error: `Error al crear "${receta.producto_nombre}": ${insertProdError?.message}`,
       };
     }
+
+    productoId = nuevoProducto.id;
   }
 
-  // 4. Descontar stock de cada ingrediente
+  // 4. Descontar stock de ingredientes
   for (const ing of receta.ingredientes) {
     const prod = productos.find((p) => p.nombre === ing.nombre)!;
     const descuento = ing.cantidad * cantidad;
@@ -143,9 +142,42 @@ export async function producir(
     }
   }
 
+  // 5. Guardar en historial
+  const { error: histError } = await supabase
+    .from('produccion_historial')
+    .insert({
+      producto_id: productoId,
+      receta_id: receta.id,
+      receta_nombre: receta.nombre,
+      cantidad,
+    });
+
+  if (histError) {
+    return {
+      success: false,
+      error: `Error al guardar historial de producción: ${histError.message}`,
+    };
+  }
+
+  revalidatePath('/inventario');
   revalidatePath('/productos');
   return {
     success: true,
     message: `✅ Producidas ${cantidad} ${cantidad === 1 ? 'galleta' : 'galletas'} — ${receta.nombre}. Stock actualizado: ${receta.producto_nombre}`,
   };
+}
+
+export async function listHistorial(): Promise<ProduccionHistorial[]> {
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from('produccion_historial')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error al cargar historial de producción:', error.message);
+    return [];
+  }
+
+  return data ?? [];
 }

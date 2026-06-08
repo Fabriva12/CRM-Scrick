@@ -77,3 +77,36 @@ export async function deleteProducto(
   revalidatePath('/productos');
   return { success: true };
 }
+
+export async function ajustarStock(
+  productoId: string,
+  cantidad: number
+): Promise<{ success: boolean; error?: string }> {
+  if (cantidad < 1) {
+    return { success: false, error: 'La cantidad debe ser al menos 1' };
+  }
+
+  const supabase = createServiceClient();
+
+  const { data: producto, error: fetchError } = await supabase
+    .from('productos')
+    .select('stock')
+    .eq('id', productoId)
+    .single();
+
+  if (fetchError || !producto) {
+    return { success: false, error: 'Producto no encontrado' };
+  }
+
+  const { error: updateError } = await supabase
+    .from('productos')
+    .update({ stock: producto.stock + cantidad })
+    .eq('id', productoId);
+
+  if (updateError) {
+    return { success: false, error: updateError.message };
+  }
+
+  revalidatePath('/productos');
+  return { success: true };
+}

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const CATEGORIAS = [
+  'Ingredientes',
   'Produccion',
   'Servicios',
   'Renta',

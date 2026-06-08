@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useActionState, startTransition, useEffect, useMemo, useRef, type FormEvent } from 'react';
+import { useState, useActionState, startTransition, useRef, useMemo, type FormEvent } from 'react';
 import {
   Card,
   CardContent,
@@ -16,19 +16,10 @@ import { ESTADOS } from '@/lib/validations/ventas';
 import type { Cliente } from '@/lib/types/clientes';
 import type { Producto } from '@/lib/types/productos';
 import type {
-  Venta,
   VentaWithDetails,
   VentaActionResult,
 } from '@/lib/types/ventas';
-import { Plus, Trash2, AlertTriangle, CheckCircle, Package } from 'lucide-react';
-
-interface ProductoRow {
-  tempId: string;
-  producto_id: string;
-  cantidad: number;
-  precio_venta: number;
-  subtotal: number;
-}
+import { AlertTriangle, CheckCircle } from 'lucide-react';
 
 interface VentaFormProps {
   clientes: Cliente[];
@@ -38,12 +29,6 @@ interface VentaFormProps {
     prevState: VentaActionResult | null,
     formData: FormData
   ) => Promise<VentaActionResult>;
-}
-
-let rowCounter = 0;
-function nextRowId() {
-  rowCounter += 1;
-  return `row-${rowCounter}-${Date.now()}`;
 }
 
 function FieldError({ error }: { error?: string[] | null }) {
@@ -62,135 +47,93 @@ export function VentaForm({
   action,
 }: VentaFormProps) {
   const [state, formAction, isPending] = useActionState(action, null);
-  const [stockError, setStockError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const isEditMode = !!venta;
 
-  const [productRows, setProductRows] = useState<ProductoRow[]>(
-    venta?.venta_productos?.map((vp) => ({
-      tempId: nextRowId(),
-      producto_id: vp.producto_id,
-      cantidad: vp.cantidad,
-      precio_venta: vp.precio_unitario,
-      subtotal: vp.subtotal,
-    })) ?? []
+  const [receta1Cantidad, setReceta1Cantidad] = useState(
+    venta?.venta_productos?.find(
+      (vp) => vp.productos?.nombre === 'Galleta Proteica Receta 1'
+    )?.cantidad ?? 0
+  );
+  const [receta1Precio, setReceta1Precio] = useState(
+    venta?.venta_productos?.find(
+      (vp) => vp.productos?.nombre === 'Galleta Proteica Receta 1'
+    )?.precio_unitario ?? 0
+  );
+  const [receta2Cantidad, setReceta2Cantidad] = useState(
+    venta?.venta_productos?.find(
+      (vp) => vp.productos?.nombre === 'Galleta Proteica Receta 2'
+    )?.cantidad ?? 0
+  );
+  const [receta2Precio, setReceta2Precio] = useState(
+    venta?.venta_productos?.find(
+      (vp) => vp.productos?.nombre === 'Galleta Proteica Receta 2'
+    )?.precio_unitario ?? 0
   );
 
-  function addProductRow() {
-    setProductRows((prev) => [
-      ...prev,
-      {
-        tempId: nextRowId(),
-        producto_id: '',
-        cantidad: 1,
-        precio_venta: 0,
-        subtotal: 0,
-      },
-    ]);
-  }
-
-  function removeProductRow(tempId: string) {
-    setProductRows((prev) => prev.filter((r) => r.tempId !== tempId));
-  }
-
-  function updateRow(
-    tempId: string,
-    field: 'producto_id' | 'cantidad',
-    value: string
-  ) {
-    setProductRows((prev) =>
-      prev.map((row) => {
-        if (row.tempId !== tempId) return row;
-
-        const updated = { ...row };
-
-        if (field === 'producto_id') {
-          updated.producto_id = value;
-          const prod = productos.find((p) => p.id === value);
-          updated.precio_venta = prod?.precio_venta ?? 0;
-        } else if (field === 'cantidad') {
-          updated.cantidad = Number(value) || 0;
-        }
-
-        updated.subtotal = updated.cantidad * updated.precio_venta;
-        return updated;
-      })
-    );
-  }
-
-  const total = useMemo(
-    () => productRows.reduce((sum, row) => sum + row.subtotal, 0),
-    [productRows]
+  const productoReceta1 = useMemo(
+    () => productos.find((p) => p.nombre === 'Galleta Proteica Receta 1'),
+    [productos]
+  );
+  const productoReceta2 = useMemo(
+    () => productos.find((p) => p.nombre === 'Galleta Proteica Receta 2'),
+    [productos]
   );
 
-  // Reset stock error when product rows change (user adjusts quantities/products)
-  const prevRowsRef = useRef(productRows);
-  useEffect(() => {
-    if (prevRowsRef.current !== productRows) {
-      prevRowsRef.current = productRows;
-      if (stockError) setStockError(null);
-    }
-  });
+  const subtotalReceta1 = receta1Cantidad * receta1Precio;
+  const subtotalReceta2 = receta2Cantidad * receta2Precio;
+  const total = subtotalReceta1 + subtotalReceta2;
 
-  // Stock alerts: check each product row against available stock
   const stockAlerts = useMemo(() => {
-    return productRows
-      .filter((row) => row.producto_id)
-      .map((row) => {
-        const prod = productos.find((p) => p.id === row.producto_id);
-        if (!prod) return null;
-        const disponible = prod.stock;
-        const solicitado = row.cantidad;
-        return {
-          tempId: row.tempId,
-          nombre: prod.nombre,
-          stock: disponible,
-          solicitado,
-          suficiente: solicitado <= disponible,
-          parcial: solicitado > 0 && disponible > 0 && solicitado > disponible,
-          sinStock: disponible === 0 && solicitado > 0,
-        };
-      })
-      .filter(Boolean) as {
-      tempId: string;
+    const alerts: {
+      id: string;
       nombre: string;
       stock: number;
       solicitado: number;
       suficiente: boolean;
-      parcial: boolean;
-      sinStock: boolean;
-    }[];
-  }, [productRows, productos]);
+    }[] = [];
+
+    if (productoReceta1 && receta1Cantidad > 0) {
+      alerts.push({
+        id: 'receta-1',
+        nombre: productoReceta1.nombre,
+        stock: productoReceta1.stock,
+        solicitado: receta1Cantidad * 1,
+        suficiente: receta1Cantidad * 1 <= productoReceta1.stock,
+      });
+    }
+
+    if (productoReceta2 && receta2Cantidad > 0) {
+      alerts.push({
+        id: 'receta-2',
+        nombre: productoReceta2.nombre,
+        stock: productoReceta2.stock,
+        solicitado: receta2Cantidad * 4,
+        suficiente: receta2Cantidad * 4 <= productoReceta2.stock,
+      });
+    }
+
+    return alerts;
+  }, [productoReceta1, productoReceta2, receta1Cantidad, receta2Cantidad]);
 
   const hasStockIssues = stockAlerts.some((a) => !a.suficiente);
-  const hasLowStock = stockAlerts.some((a) => a.parcial);
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setStockError(null);
 
-    // Block if stock is insufficient
-    if (hasStockIssues) {
-      const items = stockAlerts
-        .filter((a) => !a.suficiente)
-        .map(
-          (a) =>
-            `• ${a.nombre}: solicitaste ${a.solicitado}, hay ${a.stock} en stock`
-        )
-        .join('\n');
-      setStockError(
-        `Stock insuficiente para completar la venta:\n${items}`
-      );
+    if (receta1Cantidad < 1 && receta2Cantidad < 1) {
+      return;
+    }
+
+    if (!isEditMode && hasStockIssues) {
       return;
     }
 
     const formData = new FormData(e.currentTarget);
-
-    // Append product rows as repeated form fields
-    productRows.forEach((row, index) => {
-      formData.set(`producto_${index}_id`, row.producto_id);
-      formData.set(`producto_${index}_cantidad`, String(row.cantidad));
-    });
+    formData.set('receta1_cantidad', String(receta1Cantidad));
+    formData.set('receta1_precio', String(receta1Precio));
+    formData.set('receta2_cantidad', String(receta2Cantidad));
+    formData.set('receta2_precio', String(receta2Precio));
 
     startTransition(() => {
       formAction(formData);
@@ -208,19 +151,6 @@ export function VentaForm({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Stock error (blocks submit) */}
-          {stockError && (
-            <div
-              className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800"
-              role="alert"
-            >
-              <p className="mb-1 font-medium">❌ No se puede crear la venta</p>
-              <pre className="whitespace-pre-wrap text-xs">
-                {stockError}
-              </pre>
-            </div>
-          )}
-
           {/* Server/network error */}
           {state?.errors?._form && (
             <div
@@ -232,7 +162,7 @@ export function VentaForm({
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
-            {/* Cliente selector */}
+            {/* Cliente */}
             <div className="sm:col-span-2">
               <Label htmlFor="cliente_id">
                 Cliente <span className="text-destructive">*</span>
@@ -283,7 +213,7 @@ export function VentaForm({
               <FieldError error={state?.errors?.fecha} />
             </div>
 
-            {/* Estado (radio buttons) */}
+            {/* Estado */}
             <fieldset>
               <legend className="text-sm leading-none font-medium mb-2">
                 Estado <span className="text-destructive">*</span>
@@ -314,7 +244,7 @@ export function VentaForm({
           </div>
 
           {/* Stock banner */}
-          {productRows.some((r) => r.producto_id) && (
+          {(receta1Cantidad > 0 || receta2Cantidad > 0) && (
             <div
               className={cn(
                 'flex items-start gap-3 rounded-lg border px-4 py-3 text-sm',
@@ -336,204 +266,146 @@ export function VentaForm({
                       {stockAlerts
                         .filter((a) => !a.suficiente)
                         .map((a) => (
-                          <li key={a.tempId}>
+                          <li key={a.id}>
                             {a.nombre} — solicitaste{' '}
-                            <span className="font-semibold">{a.solicitado}</span>, hay{' '}
-                            <span className="font-semibold">{a.stock}</span> en stock
+                            <span className="font-semibold">{a.solicitado}</span>{' '}
+                            unidades, hay{' '}
+                            <span className="font-semibold">{a.stock}</span>{' '}
+                            en stock
                           </li>
                         ))}
                     </ul>
                   </div>
                 ) : (
-                  <span>
-                    Stock suficiente para todos los productos{' '}
-                    <span className="text-xs opacity-70">
-                      ({productos.length} producto{productos.length !== 1 ? 's' : ''} en catálogo)
-                    </span>
-                  </span>
+                  <span>Stock suficiente para completar la venta</span>
                 )}
               </div>
             </div>
           )}
 
-          {/* Product lines */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium">
-                Productos <span className="text-destructive">*</span>
-              </h3>
-              {!isEditMode && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addProductRow}
-                >
-                  <Plus className="size-4" />
-                  Agregar producto
-                </Button>
-              )}
+          {/* Productos */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium">
+              Productos <span className="text-destructive">*</span>
+            </h3>
+
+            {/* Receta 1 */}
+            <div className="rounded-lg border p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="font-medium">Receta 1</span>
+                <span className="text-xs text-muted-foreground">
+                  Stock:{' '}
+                  <span className="tabular-nums font-medium">
+                    {productoReceta1?.stock ?? 0}
+                  </span>{' '}
+                  unid
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label htmlFor="r1-cant">Cantidad</Label>
+                  <Input
+                    id="r1-cant"
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={receta1Cantidad || ''}
+                    onChange={(e) =>
+                      setReceta1Cantidad(Math.max(0, Number(e.target.value) || 0))
+                    }
+                    disabled={isEditMode}
+                    className="mt-1"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="r1-precio">Precio x unid (₡)</Label>
+                  <Input
+                    id="r1-precio"
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={receta1Precio || ''}
+                    onChange={(e) =>
+                      setReceta1Precio(Math.max(0, Number(e.target.value) || 0))
+                    }
+                    className="mt-1"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Subtotal</Label>
+                  <p className="mt-1.5 text-right text-lg font-semibold tabular-nums">
+                    ₡{subtotalReceta1.toFixed(2)}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            {productRows.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center border border-dashed rounded-lg">
-                {isEditMode
-                  ? 'Esta venta no tiene productos asociados.'
-                  : 'Agrega al menos un producto a la venta.'}
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-muted-foreground">
-                      <th className="py-2 pr-2 font-medium">Producto</th>
-                      <th className="py-2 px-2 font-medium">Precio</th>
-                      <th className="py-2 px-2 font-medium">Cantidad</th>
-                      <th className="py-2 px-2 font-medium text-right">
-                        Subtotal
-                      </th>
-                      {!isEditMode && (
-                        <th className="py-2 pl-2 w-10" />
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {productRows.map((row) => (
-                      <tr key={row.tempId} className="border-b border-border/50">
-                        <td className="py-2 pr-2">
-                          {isEditMode ? (
-                            <span className="font-medium">
-                              {row.producto_id
-                                ? productos.find(
-                                    (p) => p.id === row.producto_id
-                                  )?.nombre ?? 'Producto desconocido'
-                                : '—'}
-                            </span>
-                          ) : (
-                            <select
-                              value={row.producto_id}
-                              onChange={(e) =>
-                                updateRow(row.tempId, 'producto_id', e.target.value)
-                              }
-                              className={cn(
-                                'flex h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-2 py-1 text-sm transition-colors sm:min-w-[180px]',
-                                'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
-                              )}
-                            >
-                              <option value="" disabled>
-                                Seleccionar...
-                              </option>
-                              {productos.map((prod) => (
-                                <option key={prod.id} value={prod.id}>
-                                  {prod.nombre}
-                                  {prod.sku ? ` (${prod.sku})` : ''} — $
-                                  {prod.precio_venta.toFixed(2)}
-                                  {prod.stock > 0
-                                    ? ` — Stock: ${prod.stock}`
-                                    : prod.stock === 0
-                                      ? ' — Sin stock'
-                                      : ''}
-                                </option>
-                              ))}
-                            </select>
-                          )}
-                        </td>
-                        <td className="py-2 px-2">
-                          <span className="tabular-nums">
-                            ${row.precio_venta.toFixed(2)}
-                          </span>
-                        </td>
-                        <td className="py-2 px-2">
-                          {isEditMode ? (
-                            <span className="tabular-nums">{row.cantidad}</span>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                min="1"
-                                step="1"
-                                value={row.cantidad}
-                                onChange={(e) =>
-                                  updateRow(row.tempId, 'cantidad', e.target.value)
-                                }
-                                className="h-9 w-20"
-                              />
-                              {(() => {
-                                const alert = stockAlerts.find(
-                                  (a) => a.tempId === row.tempId
-                                );
-                                if (!alert || !row.producto_id) return null;
-                                if (alert.sinStock)
-                                  return (
-                                    <span
-                                      className="shrink-0 text-xs text-red-600"
-                                      title="Sin stock disponible"
-                                    >
-                                      <Package className="inline size-3.5 align-text-top" />
-                                      <span className="ml-0.5">0</span>
-                                    </span>
-                                  );
-                                if (alert.parcial)
-                                  return (
-                                    <span
-                                      className="shrink-0 text-xs text-amber-600"
-                                      title={`Stock disponible: ${alert.stock}`}
-                                    >
-                                      <Package className="inline size-3.5 align-text-top" />
-                                      <span className="ml-0.5">{alert.stock}</span>
-                                    </span>
-                                  );
-                                return (
-                                  <span
-                                    className="shrink-0 text-xs text-green-600"
-                                    title="Stock suficiente"
-                                  >
-                                    <Package className="inline size-3.5 align-text-top" />
-                                    <span className="ml-0.5">
-                                      {alert.stock - alert.solicitado}
-                                    </span>
-                                  </span>
-                                );
-                              })()}
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-2 px-2 text-right tabular-nums">
-                          ${row.subtotal.toFixed(2)}
-                        </td>
-                        {!isEditMode && (
-                          <td className="py-2 pl-2">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => removeProductRow(row.tempId)}
-                            >
-                              <Trash2 className="size-4 text-destructive" />
-                              <span className="sr-only">Eliminar producto</span>
-                            </Button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="font-medium">
-                      <td
-                        colSpan={3}
-                        className="py-3 text-right text-sm"
-                      >
-                        Total:
-                      </td>
-                      <td className="py-3 px-2 text-right tabular-nums text-base">
-                        ${total.toFixed(2)}
-                      </td>
-                      {!isEditMode && <td />}
-                    </tr>
-                  </tfoot>
-                </table>
+            {/* Receta 2 */}
+            <div className="rounded-lg border p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="font-medium">Receta 2</span>
+                <span className="text-xs text-muted-foreground">
+                  Stock:{' '}
+                  <span className="tabular-nums font-medium">
+                    {productoReceta2?.stock ?? 0}
+                  </span>{' '}
+                  unid (
+                  {Math.floor((productoReceta2?.stock ?? 0) / 4)} paq)
+                </span>
               </div>
-            )}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label htmlFor="r2-cant">Paquetes</Label>
+                  <Input
+                    id="r2-cant"
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={receta2Cantidad || ''}
+                    onChange={(e) =>
+                      setReceta2Cantidad(Math.max(0, Number(e.target.value) || 0))
+                    }
+                    disabled={isEditMode}
+                    className="mt-1"
+                    placeholder="0"
+                  />
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    1 paquete = 4 galletas
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="r2-precio">Precio x paq (₡)</Label>
+                  <Input
+                    id="r2-precio"
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={receta2Precio || ''}
+                    onChange={(e) =>
+                      setReceta2Precio(Math.max(0, Number(e.target.value) || 0))
+                    }
+                    className="mt-1"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Subtotal</Label>
+                  <p className="mt-1.5 text-right text-lg font-semibold tabular-nums">
+                    ₡{subtotalReceta2.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Total */}
+            <div className="flex items-center justify-end gap-4 rounded-lg border bg-muted/30 px-4 py-3">
+              <span className="text-sm font-medium">Total:</span>
+              <span className="text-xl font-bold tabular-nums">
+                ₡{total.toFixed(2)}
+              </span>
+            </div>
           </div>
 
           {/* Notas */}
@@ -553,7 +425,6 @@ export function VentaForm({
                 'aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20'
               )}
             />
-            <FieldError error={state?.errors?.notas} />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col-reverse justify-between gap-4 sm:flex-row">
@@ -564,7 +435,10 @@ export function VentaForm({
           >
             Cancelar
           </Button>
-          <Button type="submit" disabled={isPending}>
+          <Button
+            type="submit"
+            disabled={isPending || (receta1Cantidad < 1 && receta2Cantidad < 1) || (!isEditMode && hasStockIssues)}
+          >
             {isPending
               ? 'Guardando...'
               : isEditMode
