@@ -34,7 +34,6 @@ export function ProductoTable({ productos }: ProductoTableProps) {
             <TableHead className="hidden sm:table-cell">SKU</TableHead>
             <TableHead>Stock</TableHead>
             <TableHead className="hidden sm:table-cell">Costo</TableHead>
-            <TableHead className="hidden sm:table-cell">Unidad</TableHead>
             <TableHead className="text-right">Acciones</TableHead>
           </TableRow>
         </TableHeader>
@@ -54,17 +53,17 @@ export function ProductoTable({ productos }: ProductoTableProps) {
               </TableCell>
               <TableCell
                 className={cn(
-                  'tabular-nums',
+                  'tabular-nums whitespace-nowrap',
                   producto.stock < 50 ? 'font-medium text-red-600' : 'text-muted-foreground'
                 )}
               >
                 {producto.stock}
+                <span className="ml-1 text-xs text-muted-foreground/50">
+                  {producto.unidad || 'unid'}
+                </span>
               </TableCell>
               <TableCell className="hidden sm:table-cell text-muted-foreground tabular-nums">
                 {producto.costo ? currency.format(producto.costo) : '—'}
-              </TableCell>
-              <TableCell className="hidden sm:table-cell text-muted-foreground">
-                {producto.unidad || '—'}
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1">
