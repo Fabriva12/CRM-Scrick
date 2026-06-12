@@ -68,7 +68,7 @@ export function ClienteTable({ clientes }: ClienteTableProps) {
                   <ClienteBadge tipo={cliente.tipo} />
                 </TableCell>
                 <TableCell className="hidden sm:table-cell text-muted-foreground">
-                  {cliente.email}
+                  {cliente.email || '—'}
                 </TableCell>
                 <TableCell className="hidden sm:table-cell text-muted-foreground">
                   {cliente.ciudad || '—'}

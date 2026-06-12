@@ -102,9 +102,7 @@ export function ClienteForm({ cliente, action }: ClienteFormProps) {
 
             {/* Email */}
             <div>
-              <Label htmlFor="email">
-                Email <span className="text-destructive">*</span>
-              </Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 name="email"
@@ -112,7 +110,6 @@ export function ClienteForm({ cliente, action }: ClienteFormProps) {
                 defaultValue={cliente?.email ?? ''}
                 placeholder="correo@ejemplo.com"
                 aria-invalid={!!state?.errors?.email}
-                required
               />
               <FieldError error={state?.errors?.email} />
             </div>
