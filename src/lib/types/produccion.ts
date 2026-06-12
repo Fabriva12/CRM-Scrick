@@ -4,6 +4,7 @@ export interface ProduccionHistorial {
   receta_id: string;
   receta_nombre: string;
   cantidad: number;
+  lote: string;
   created_at: string;
 }
 
