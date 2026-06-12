@@ -5,6 +5,14 @@ import { RECETAS } from '@/lib/recetas';
 import { revalidatePath } from 'next/cache';
 import type { ProduccionHistorial } from '@/lib/types/produccion';
 
+function generarLote(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}${m}${d}`;
+}
+
 export type ProducirResultado =
   | { success: true; message: string }
   | { success: false; error: string };
@@ -143,6 +151,7 @@ export async function producir(
   }
 
   // 5. Guardar en historial
+  const lote = generarLote();
   const { error: histError } = await supabase
     .from('produccion_historial')
     .insert({
@@ -150,6 +159,7 @@ export async function producir(
       receta_id: receta.id,
       receta_nombre: receta.nombre,
       cantidad,
+      lote,
     });
 
   if (histError) {
