@@ -6,7 +6,10 @@ export type ClienteTipo = (typeof TIPOS)[number];
 export const clienteSchema = z.object({
   nombre: z.string().min(1, 'Nombre es requerido').max(256),
   tipo: z.enum(TIPOS, { error: 'Tipo debe ser B2B o B2C' }),
-  email: z.string().min(1, 'Email es requerido').email('Email inválido'),
+  email: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().email('Email inválido').optional().nullable().default(null)
+  ),
   telefono: z.string().optional().nullable().default(null),
   ciudad: z.string().max(128).optional().nullable().default(null),
   rfc: z.string().max(13).optional().nullable().default(null),

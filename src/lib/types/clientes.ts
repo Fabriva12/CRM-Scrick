@@ -2,7 +2,7 @@ export interface Cliente {
   id: string;
   nombre: string;
   tipo: 'B2B' | 'B2C';
-  email: string;
+  email: string | null;
   telefono: string | null;
   ciudad: string | null;
   rfc: string | null;
