@@ -96,17 +96,26 @@ describe('clienteSchema', () => {
       expect(result.success).toBe(false);
     });
 
-    it('rejects empty email', () => {
+    it('accepts empty email as null', () => {
       const result = clienteSchema.safeParse({
         nombre: 'Test',
         tipo: 'B2C',
         email: '',
       });
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues.some((i) => i.path.includes('email'))).toBe(
-          true
-        );
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.email).toBeNull();
+      }
+    });
+
+    it('accepts missing email as null', () => {
+      const result = clienteSchema.safeParse({
+        nombre: 'Test',
+        tipo: 'B2C',
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.email).toBeNull();
       }
     });
 
@@ -156,7 +165,7 @@ describe('clienteSchema', () => {
         const paths = result.error.issues.map((i) => i.path[0]);
         expect(paths).toContain('nombre');
         expect(paths).toContain('tipo');
-        expect(paths).toContain('email');
+        expect(paths).not.toContain('email');
       }
     });
   });
