@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useState } from "react";
+import Link from "next/link";
 import {
   Table,
   TableHeader,
@@ -9,12 +9,12 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { VentaEstadoBadge } from '@/components/molecules/VentaEstadoBadge';
-import { DeleteVentaDialog } from '@/components/organisms/DeleteVentaDialog';
-import type { Venta } from '@/lib/types/ventas';
-import { Eye, Pencil, Trash2 } from 'lucide-react';
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { VentaEstadoBadge } from "@/components/molecules/VentaEstadoBadge";
+import { DeleteVentaDialog } from "@/components/organisms/DeleteVentaDialog";
+import type { Venta } from "@/lib/types/ventas";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 
 interface VentaTableProps {
   ventas: Venta[];
@@ -25,7 +25,7 @@ export function VentaTable({ ventas }: VentaTableProps) {
     open: boolean;
     id: string;
     label: string;
-  }>({ open: false, id: '', label: '' });
+  }>({ open: false, id: "", label: "" });
 
   function handleDeleteClick(venta: Venta) {
     const label = `Venta #${venta.id.slice(0, 8)}`;
@@ -33,18 +33,24 @@ export function VentaTable({ ventas }: VentaTableProps) {
   }
 
   function formatDate(dateStr: string) {
-    return new Intl.DateTimeFormat('es-MX', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+    return new Intl.DateTimeFormat("es-MX", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     }).format(new Date(dateStr));
   }
 
   function formatCurrency(value: number) {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'CRC',
+    return new Intl.NumberFormat("es-MX", {
+      style: "currency",
+      currency: "CRC",
     }).format(value);
+  }
+
+  function notaLegible(nota: string | null): string | null {
+    if (!nota) return null;
+    const clean = nota.replace(/^Venta:\s*/i, "").trim();
+    return clean || null;
   }
 
   return (
@@ -63,13 +69,21 @@ export function VentaTable({ ventas }: VentaTableProps) {
           <TableBody>
             {ventas.map((venta) => (
               <TableRow key={venta.id}>
-                <TableCell className="font-medium">
+                <TableCell className="min-w-0 font-medium">
                   <Link
                     href={`/ventas/${venta.id}`}
                     className="hover:text-primary transition-colors"
                   >
-                    {venta.clientes?.nombre ?? 'Cliente desconocido'}
+                    {venta.clientes?.nombre ?? "Cliente desconocido"}
                   </Link>
+                  {notaLegible(venta.notas) && (
+                    <p
+                      className="mt-0.5 max-w-[320px] truncate text-xs font-normal text-muted-foreground"
+                      title={notaLegible(venta.notas)!}
+                    >
+                      {notaLegible(venta.notas)}
+                    </p>
+                  )}
                 </TableCell>
                 <TableCell className="hidden sm:table-cell text-muted-foreground whitespace-nowrap">
                   {formatDate(venta.fecha)}
@@ -121,9 +135,7 @@ export function VentaTable({ ventas }: VentaTableProps) {
         ventaId={deleteDialog.id}
         ventaLabel={deleteDialog.label}
         open={deleteDialog.open}
-        onOpenChange={(open) =>
-          setDeleteDialog((prev) => ({ ...prev, open }))
-        }
+        onOpenChange={(open) => setDeleteDialog((prev) => ({ ...prev, open }))}
       />
     </>
   );
