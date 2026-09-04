@@ -34,7 +34,7 @@ export default async function DashboardPage() {
     supabase
       .from('ventas')
       .select('*, clientes(nombre)')
-      .order('created_at', { ascending: false })
+      .order('fecha', { ascending: false })
       .limit(5),
     supabase
       .from('productos')
