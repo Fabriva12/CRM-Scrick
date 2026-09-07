@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { createServiceClient } from '@/lib/supabase/server';
 import { ResumenCards } from '@/components/organisms/ResumenCards';
 import { GastosTable } from '@/components/organisms/GastosTable';
+import { FiltroMes } from '@/components/organisms/FiltroMes';
 import { Button } from '@/components/ui/button';
 import { ExportButton } from '@/components/molecules/ExportButton';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,14 +11,36 @@ import { Plus, Wallet } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
-export default async function FinanzasPage() {
+function firstDayOfMonth(mes: string): string {
+  return `${mes}-01`;
+}
+
+function lastDayOfMonth(mes: string): string {
+  const [year, month] = mes.split('-').map(Number);
+  const lastDay = new Date(year, month, 0).getDate();
+  return `${mes}-${String(lastDay).padStart(2, '0')}`;
+}
+
+interface FinanzasPageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function FinanzasPage({ searchParams }: FinanzasPageProps) {
+  const { mes } = await searchParams;
+  const mesVal =
+    typeof mes === 'string' && /^\d{4}-\d{2}$/.test(mes) ? mes : undefined;
+  const first = mesVal ? firstDayOfMonth(mesVal) : '0001-01-01';
+  const last = mesVal ? lastDayOfMonth(mesVal) : '9999-12-31';
+
   const supabase = createServiceClient();
 
   // Fetch income from ventas where estado = 'pagado'
   const { data: ventasData } = await supabase
     .from('ventas')
     .select('monto_total')
-    .eq('estado', 'pagado');
+    .eq('estado', 'pagado')
+    .gte('fecha', first)
+    .lte('fecha', last);
 
   const ingresos_totales =
     ventasData?.reduce((sum, v) => sum + Number(v.monto_total), 0) ?? 0;
@@ -27,6 +50,8 @@ export default async function FinanzasPage() {
   const { data: gastosData, error: gastosError } = await supabase
     .from('gastos')
     .select('*')
+    .gte('fecha', first)
+    .lte('fecha', last)
     .order('fecha', { ascending: false });
 
   if (gastosError) {
@@ -53,10 +78,11 @@ export default async function FinanzasPage() {
         <div>
           <h1 className="font-heading text-3xl tracking-wide">Finanzas</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Resumen de ingresos, egresos y balance general
+            Resumen de ingresos, egresos y balance
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <FiltroMes basePath="/finanzas" mes={mesVal} />
           {typedGastos.length > 0 && (
             <ExportButton
               data={typedGastos as unknown as Record<string, unknown>[]}

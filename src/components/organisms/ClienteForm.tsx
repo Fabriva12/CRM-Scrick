@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import type { Cliente, ClienteActionResult } from '@/lib/types/clientes';
-import { TIPOS } from '@/lib/validations/clientes';
+import { TIPOS, FUENTES } from '@/lib/validations/clientes';
 import { cn } from '@/lib/utils';
 
 interface ClienteFormProps {
@@ -162,6 +162,30 @@ export function ClienteForm({ cliente, action }: ClienteFormProps) {
                 placeholder="Nombre de la empresa"
               />
               <FieldError error={state?.errors?.empresa} />
+            </div>
+
+            {/* Fuente */}
+            <div className="sm:col-span-2">
+              <Label htmlFor="fuente">¿De dónde vino este cliente?</Label>
+              <select
+                id="fuente"
+                name="fuente"
+                defaultValue={cliente?.fuente ?? ''}
+                className={cn(
+                  'flex h-9 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors',
+                  'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
+                  'disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50',
+                  'aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20'
+                )}
+              >
+                <option value="">Seleccionar (opcional)</option>
+                {FUENTES.map((fuente) => (
+                  <option key={fuente} value={fuente}>
+                    {fuente}
+                  </option>
+                ))}
+              </select>
+              <FieldError error={state?.errors?.fuente} />
             </div>
 
             {/* Notas */}

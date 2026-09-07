@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { createServiceClient } from '@/lib/supabase/server';
 import { VentaTable } from '@/components/organisms/VentaTable';
+import { FiltroMes } from '@/components/organisms/FiltroMes';
 import { Button } from '@/components/ui/button';
 import { ExportButton } from '@/components/molecules/ExportButton';
 import type { Venta } from '@/lib/types/ventas';
@@ -9,11 +10,33 @@ import { Card, CardContent } from '@/components/ui/card';
 
 export const dynamic = 'force-dynamic';
 
-export default async function VentasPage() {
+function firstDayOfMonth(mes: string): string {
+  return `${mes}-01`;
+}
+
+function lastDayOfMonth(mes: string): string {
+  const [year, month] = mes.split('-').map(Number);
+  const lastDay = new Date(year, month, 0).getDate();
+  return `${mes}-${String(lastDay).padStart(2, '0')}`;
+}
+
+interface VentasPageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function VentasPage({ searchParams }: VentasPageProps) {
+  const { mes } = await searchParams;
+  const mesVal =
+    typeof mes === 'string' && /^\d{4}-\d{2}$/.test(mes) ? mes : undefined;
+  const first = mesVal ? firstDayOfMonth(mesVal) : '0001-01-01';
+  const last = mesVal ? lastDayOfMonth(mesVal) : '9999-12-31';
+
   const supabase = createServiceClient();
   const { data: ventas, error } = await supabase
     .from('ventas')
     .select('*, clientes!inner(nombre)')
+    .gte('fecha', first)
+    .lte('fecha', last)
     .order('fecha', { ascending: false });
 
   if (error) {
@@ -32,6 +55,7 @@ export default async function VentasPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <FiltroMes basePath="/ventas" mes={mesVal} />
           {typedVentas.length > 0 && (
             <ExportButton
               data={typedVentas as unknown as Record<string, unknown>[]}

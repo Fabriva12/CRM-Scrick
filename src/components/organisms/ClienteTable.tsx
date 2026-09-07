@@ -49,6 +49,7 @@ export function ClienteTable({ clientes }: ClienteTableProps) {
               <TableHead>Tipo</TableHead>
               <TableHead className="hidden sm:table-cell">Email</TableHead>
               <TableHead className="hidden sm:table-cell">Ciudad</TableHead>
+              <TableHead className="hidden md:table-cell">Fuente</TableHead>
               <TableHead className="hidden sm:table-cell">Creado</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
@@ -73,6 +74,13 @@ export function ClienteTable({ clientes }: ClienteTableProps) {
                 <TableCell className="hidden sm:table-cell text-muted-foreground">
                   {cliente.ciudad || '—'}
                 </TableCell>
+                {cliente.fuente && (
+                  <TableCell className="hidden md:table-cell">
+                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-[#2F3031]">
+                      {cliente.fuente}
+                    </span>
+                  </TableCell>
+                )}
                 <TableCell className="hidden sm:table-cell text-muted-foreground whitespace-nowrap">
                   {formatDate(cliente.created_at)}
                 </TableCell>

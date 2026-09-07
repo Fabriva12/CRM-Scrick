@@ -7,6 +7,7 @@ interface DashboardCardsProps {
   pendientesTotal: number;
   cantidadPendientes: number;
   balanceNeto: number;
+  unidadesVendidas: number;
 }
 
 function formatCurrency(value: number) {
@@ -27,40 +28,52 @@ export function DashboardCards({
   pendientesTotal,
   cantidadPendientes,
   balanceNeto,
+  unidadesVendidas,
 }: DashboardCardsProps) {
   return (
-    <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+    <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
       {/* Clientes */}
-      <div className="rounded-xl bg-[#FEA372]/15 p-5 ring-1 ring-[#FEA372]/30">
+      <div className="min-w-0 overflow-hidden rounded-xl bg-[#FEA372]/15 p-5 ring-1 ring-[#FEA372]/30">
         <span className="text-2xl">👥</span>
-        <p className="mt-2 text-xl font-bold tabular-nums sm:text-3xl text-[#2F3031]">
+        <p className="mt-2 text-lg font-bold tabular-nums sm:text-2xl lg:text-3xl text-[#2F3031] break-all">
           {formatNumber(totalClientes)}
         </p>
         <p className="mt-1 text-sm text-[#2F3031]/60">Clientes registrados</p>
       </div>
 
-      {/* Ventas del mes */}
-      <div className="rounded-xl bg-blue-50 p-5 ring-1 ring-blue-200">
-        <span className="text-2xl">📈</span>
-        <p className="mt-2 text-xl font-bold tabular-nums sm:text-3xl text-[#2F3031]">
-          {formatCurrency(ventasDelMes)}
+      {/* Unidades vendidas */}
+      <div className="min-w-0 overflow-hidden rounded-xl bg-purple-50 p-5 ring-1 ring-purple-200">
+        <span className="text-2xl">📦</span>
+        <p className="mt-2 text-lg font-bold tabular-nums sm:text-2xl lg:text-3xl text-[#2F3031] break-all">
+          {formatNumber(unidadesVendidas)}
         </p>
-        <p className="mt-1 text-sm text-[#2F3031]/60">Ventas del mes</p>
+        <p className="mt-1 text-sm text-[#2F3031]/60">
+          Paquetes vendidos
+        </p>
       </div>
 
-      {/* Ingresos totales */}
-      <div className="rounded-xl bg-[#FEA372]/15 p-5 ring-1 ring-[#FEA372]/30">
+      {/* Ventas del mes */}
+      <div className="min-w-0 overflow-hidden rounded-xl bg-blue-50 p-5 ring-1 ring-blue-200">
+        <span className="text-2xl">📈</span>
+        <p className="mt-2 text-lg font-bold tabular-nums sm:text-2xl lg:text-3xl text-[#2F3031] break-all">
+          {formatCurrency(ventasDelMes)}
+        </p>
+        <p className="mt-1 text-sm text-[#2F3031]/60">Ventas</p>
+      </div>
+
+      {/* Ingresos */}
+      <div className="min-w-0 overflow-hidden rounded-xl bg-[#FEA372]/15 p-5 ring-1 ring-[#FEA372]/30">
         <span className="text-2xl">💰</span>
-        <p className="mt-2 text-xl font-bold tabular-nums sm:text-3xl text-[#2F3031]">
+        <p className="mt-2 text-lg font-bold tabular-nums sm:text-2xl lg:text-3xl text-[#2F3031] break-all">
           {formatCurrency(ingresosTotales)}
         </p>
-        <p className="mt-1 text-sm text-[#2F3031]/60">Ingresos totales</p>
+        <p className="mt-1 text-sm text-[#2F3031]/60">Ingresos</p>
       </div>
 
       {/* Por cobrar */}
-      <div className="rounded-xl bg-amber-50 p-5 ring-1 ring-amber-200">
+      <div className="min-w-0 overflow-hidden rounded-xl bg-amber-50 p-5 ring-1 ring-amber-200">
         <span className="text-2xl">🕐</span>
-        <p className="mt-2 text-xl font-bold tabular-nums sm:text-3xl text-[#2F3031]">
+        <p className="mt-2 text-lg font-bold tabular-nums sm:text-2xl lg:text-3xl text-[#2F3031] break-all">
           {formatCurrency(pendientesTotal)}
         </p>
         <p className="mt-1 text-sm text-[#2F3031]/60">
@@ -74,7 +87,7 @@ export function DashboardCards({
 
       {/* Balance Neto */}
       <div
-        className={`rounded-xl p-5 ring-1 ${
+        className={`min-w-0 overflow-hidden rounded-xl p-5 ring-1 ${
           balanceNeto >= 0
             ? 'bg-green-100 ring-green-200'
             : 'bg-red-100 ring-red-200'
@@ -82,11 +95,11 @@ export function DashboardCards({
       >
         <span className="text-2xl">✅</span>
         <p
-          className={`mt-2 text-xl font-bold tabular-nums sm:text-3xl ${
+          className={`mt-2 text-lg font-bold tabular-nums sm:text-2xl lg:text-3xl ${
             balanceNeto >= 0
               ? 'text-green-700'
               : 'text-red-700'
-          }`}
+          } break-all`}
         >
           {formatCurrency(balanceNeto)}
         </p>

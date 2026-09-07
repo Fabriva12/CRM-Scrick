@@ -8,6 +8,7 @@ export interface Cliente {
   rfc: string | null;
   empresa: string | null;
   notas: string | null;
+  fuente: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -22,6 +23,7 @@ export type ClienteActionResult = {
     rfc?: string[];
     empresa?: string[];
     notas?: string[];
+    fuente?: string[];
     _form?: string[];
   };
   data?: Cliente;

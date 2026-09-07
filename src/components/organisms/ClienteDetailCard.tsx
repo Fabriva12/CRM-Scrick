@@ -51,6 +51,7 @@ export function ClienteDetailCard({ cliente }: ClienteDetailCardProps) {
             <DetailRow label="Ciudad" value={cliente.ciudad} />
             <DetailRow label="RFC" value={cliente.rfc} />
             <DetailRow label="Empresa" value={cliente.empresa} />
+            <DetailRow label="Fuente" value={cliente.fuente} />
             <DetailRow label="Notas" value={cliente.notas} />
             <DetailRow
               label="Creado"
