@@ -13,13 +13,15 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ESTADOS } from '@/lib/validations/ventas';
+import { RECETAS } from '@/lib/recetas';
+import { formatCurrency } from '@/lib/format';
 import type { Cliente } from '@/lib/types/clientes';
 import type { Producto } from '@/lib/types/productos';
 import type {
   VentaWithDetails,
   VentaActionResult,
 } from '@/lib/types/ventas';
-import { AlertTriangle, CheckCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Truck, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface VentaFormProps {
   clientes: Cliente[];
@@ -50,39 +52,48 @@ export function VentaForm({
   const formRef = useRef<HTMLFormElement>(null);
   const isEditMode = !!venta;
 
-  const [receta1Cantidad, setReceta1Cantidad] = useState(
-    venta?.venta_productos?.find(
-      (vp) => vp.productos?.nombre === 'Galleta Proteica Receta 1'
-    )?.cantidad ?? 0
-  );
-  const [receta1Precio, setReceta1Precio] = useState(
-    venta?.venta_productos?.find(
-      (vp) => vp.productos?.nombre === 'Galleta Proteica Receta 1'
-    )?.precio_unitario ?? 0
-  );
-  const [receta2Cantidad, setReceta2Cantidad] = useState(
-    venta?.venta_productos?.find(
-      (vp) => vp.productos?.nombre === 'Galleta Proteica Receta 2'
-    )?.cantidad ?? 0
-  );
-  const [receta2Precio, setReceta2Precio] = useState(
-    venta?.venta_productos?.find(
-      (vp) => vp.productos?.nombre === 'Galleta Proteica Receta 2'
-    )?.precio_unitario ?? 0
-  );
+  const [cantidades, setCantidades] = useState<Record<string, number>>(() => {
+    const init: Record<string, number> = {};
+    for (const r of RECETAS) {
+      init[r.id] =
+        venta?.venta_productos?.find(
+          (vp) => vp.productos?.nombre === r.producto_nombre
+        )?.cantidad ?? 0;
+    }
+    return init;
+  });
+  const [precios, setPrecios] = useState<Record<string, number>>(() => {
+    const init: Record<string, number> = {};
+    for (const r of RECETAS) {
+      init[r.id] =
+        venta?.venta_productos?.find(
+          (vp) => vp.productos?.nombre === r.producto_nombre
+        )?.precio_unitario ?? 0;
+    }
+    return init;
+  });
 
-  const productoReceta1 = useMemo(
-    () => productos.find((p) => p.nombre === 'Galleta Proteica Receta 1'),
-    [productos]
-  );
-  const productoReceta2 = useMemo(
-    () => productos.find((p) => p.nombre === 'Galleta Proteica Receta 2'),
-    [productos]
-  );
+  const [envioOpen, setEnvioOpen] = useState(false);
+  const [envioPaga, setEnvioPaga] = useState(0);
+  const [envioCubre, setEnvioCubre] = useState(0);
 
-  const subtotalReceta1 = receta1Cantidad * receta1Precio;
-  const subtotalReceta2 = receta2Cantidad * receta2Precio;
-  const total = subtotalReceta1 + subtotalReceta2;
+  const productosRecetas = useMemo(() => {
+    const map: Record<string, Producto | undefined> = {};
+    for (const r of RECETAS) {
+      map[r.id] = productos.find((p) => p.nombre === r.producto_nombre);
+    }
+    return map;
+  }, [productos]);
+
+  const subtotales = useMemo(() => {
+    const totals: Record<string, number> = {};
+    for (const r of RECETAS) {
+      totals[r.id] = (cantidades[r.id] ?? 0) * (precios[r.id] ?? 0);
+    }
+    return totals;
+  }, [cantidades, precios]);
+
+  const total = RECETAS.reduce((acc, r) => acc + (subtotales[r.id] ?? 0), 0);
 
   const stockAlerts = useMemo(() => {
     const alerts: {
@@ -93,35 +104,31 @@ export function VentaForm({
       suficiente: boolean;
     }[] = [];
 
-    if (productoReceta1 && receta1Cantidad > 0) {
-      alerts.push({
-        id: 'receta-1',
-        nombre: productoReceta1.nombre,
-        stock: productoReceta1.stock,
-        solicitado: receta1Cantidad * 1,
-        suficiente: receta1Cantidad * 1 <= productoReceta1.stock,
-      });
-    }
-
-    if (productoReceta2 && receta2Cantidad > 0) {
-      alerts.push({
-        id: 'receta-2',
-        nombre: productoReceta2.nombre,
-        stock: productoReceta2.stock,
-        solicitado: receta2Cantidad * 4,
-        suficiente: receta2Cantidad * 4 <= productoReceta2.stock,
-      });
+    for (const r of RECETAS) {
+      const cantidad = cantidades[r.id] ?? 0;
+      const producto = productosRecetas[r.id];
+      if (producto && cantidad > 0) {
+        const solicitado = cantidad;
+        alerts.push({
+          id: r.id,
+          nombre: producto.nombre,
+          stock: producto.stock,
+          solicitado,
+          suficiente: solicitado <= producto.stock,
+        });
+      }
     }
 
     return alerts;
-  }, [productoReceta1, productoReceta2, receta1Cantidad, receta2Cantidad]);
+  }, [productosRecetas, cantidades]);
 
   const hasStockIssues = stockAlerts.some((a) => !a.suficiente);
+  const tieneProductos = RECETAS.some((r) => (cantidades[r.id] ?? 0) >= 1);
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (receta1Cantidad < 1 && receta2Cantidad < 1) {
+    if (!tieneProductos) {
       return;
     }
 
@@ -130,10 +137,12 @@ export function VentaForm({
     }
 
     const formData = new FormData(e.currentTarget);
-    formData.set('receta1_cantidad', String(receta1Cantidad));
-    formData.set('receta1_precio', String(receta1Precio));
-    formData.set('receta2_cantidad', String(receta2Cantidad));
-    formData.set('receta2_precio', String(receta2Precio));
+    for (const r of RECETAS) {
+      formData.set(`${r.id}_cantidad`, String(cantidades[r.id] ?? 0));
+      formData.set(`${r.id}_precio`, String(precios[r.id] ?? 0));
+    }
+    formData.set('envio_paga_cliente', String(envioPaga));
+    formData.set('envio_cubrimos', String(envioCubre));
 
     startTransition(() => {
       formAction(formData);
@@ -244,7 +253,7 @@ export function VentaForm({
           </div>
 
           {/* Stock banner */}
-          {(receta1Cantidad > 0 || receta2Cantidad > 0) && (
+          {tieneProductos && (
             <div
               className={cn(
                 'flex items-start gap-3 rounded-lg border px-4 py-3 text-sm',
@@ -265,15 +274,30 @@ export function VentaForm({
                     <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs">
                       {stockAlerts
                         .filter((a) => !a.suficiente)
-                        .map((a) => (
-                          <li key={a.id}>
-                            {a.nombre} — solicitaste{' '}
-                            <span className="font-semibold">{a.solicitado}</span>{' '}
-                            unidades, hay{' '}
-                            <span className="font-semibold">{a.stock}</span>{' '}
-                            en stock
-                          </li>
-                        ))}
+                        .map((a) => {
+                          const receta = RECETAS.find((r) => r.id === a.id);
+                          const esPaquete = receta
+                            ? receta.galletasPorUnidad > 1
+                            : false;
+                          const unidad = esPaquete
+                            ? a.solicitado === 1
+                              ? 'paquete'
+                              : 'paquetes'
+                            : a.solicitado === 1
+                              ? 'unidad'
+                              : 'unidades';
+                          return (
+                            <li key={a.id}>
+                              {a.nombre} — solicitaste{' '}
+                              <span className="font-semibold">
+                                {a.solicitado}
+                              </span>{' '}
+                              {unidad}, hay{' '}
+                              <span className="font-semibold">{a.stock}</span>{' '}
+                              en stock
+                            </li>
+                          );
+                        })}
                     </ul>
                   </div>
                 ) : (
@@ -289,124 +313,174 @@ export function VentaForm({
               Productos <span className="text-destructive">*</span>
             </h3>
 
-            {/* Receta 1 */}
-            <div className="rounded-lg border p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="font-medium">Receta 1</span>
-                <span className="text-xs text-muted-foreground">
-                  Stock:{' '}
-                  <span className="tabular-nums font-medium">
-                    {productoReceta1?.stock ?? 0}
-                  </span>{' '}
-                  unid
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label htmlFor="r1-cant">Cantidad</Label>
-                  <Input
-                    id="r1-cant"
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={receta1Cantidad || ''}
-                    onChange={(e) =>
-                      setReceta1Cantidad(Math.max(0, Number(e.target.value) || 0))
-                    }
-                    disabled={isEditMode}
-                    className="mt-1"
-                    placeholder="0"
-                  />
+            {/* Receta blocks */}
+            {RECETAS.map((r) => {
+              const producto = productosRecetas[r.id];
+              const esPaquete = r.galletasPorUnidad > 1;
+              const cantidad = cantidades[r.id] ?? 0;
+              const precio = precios[r.id] ?? 0;
+              return (
+                <div key={r.id} className="rounded-lg border p-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="font-medium">{r.producto_nombre}</span>
+                    <span className="text-xs text-muted-foreground">
+                      Stock:{' '}
+                      <span className="tabular-nums font-medium">
+                        {producto?.stock ?? 0}
+                      </span>{' '}
+                      {esPaquete ? 'paq' : 'unid'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <Label htmlFor={`${r.id}-cant`}>
+                        {esPaquete ? 'Paquetes' : 'Cantidad'}
+                      </Label>
+                      <Input
+                        id={`${r.id}-cant`}
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={cantidad || ''}
+                        onChange={(e) =>
+                          setCantidades((prev) => ({
+                            ...prev,
+                            [r.id]: Math.max(0, Number(e.target.value) || 0),
+                          }))
+                        }
+                        disabled={isEditMode}
+                        className="mt-1"
+                        placeholder="0"
+                      />
+                      {esPaquete && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          1 paquete = {r.galletasPorUnidad} galletas
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor={`${r.id}-precio`}>
+                        Precio x {esPaquete ? 'paq' : 'unid'} (₡)
+                      </Label>
+                      <Input
+                        id={`${r.id}-precio`}
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={precio || ''}
+                        onChange={(e) =>
+                          setPrecios((prev) => ({
+                            ...prev,
+                            [r.id]: Math.max(0, Math.round(Number(e.target.value) || 0)),
+                          }))
+                        }
+                        className="mt-1"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Subtotal</Label>
+                      <p className="mt-1.5 text-right text-lg font-semibold tabular-nums">
+                        {formatCurrency(subtotales[r.id] ?? 0)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="r1-precio">Precio x unid (₡)</Label>
-                  <Input
-                    id="r1-precio"
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={receta1Precio || ''}
-                    onChange={(e) =>
-                      setReceta1Precio(Math.max(0, Number(e.target.value) || 0))
-                    }
-                    className="mt-1"
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Subtotal</Label>
-                  <p className="mt-1.5 text-right text-lg font-semibold tabular-nums">
-                    ₡{subtotalReceta1.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Receta 2 */}
-            <div className="rounded-lg border p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="font-medium">Receta 2</span>
-                <span className="text-xs text-muted-foreground">
-                  Stock:{' '}
-                  <span className="tabular-nums font-medium">
-                    {productoReceta2?.stock ?? 0}
-                  </span>{' '}
-                  unid (
-                  {Math.floor((productoReceta2?.stock ?? 0) / 4)} paq)
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label htmlFor="r2-cant">Paquetes</Label>
-                  <Input
-                    id="r2-cant"
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={receta2Cantidad || ''}
-                    onChange={(e) =>
-                      setReceta2Cantidad(Math.max(0, Number(e.target.value) || 0))
-                    }
-                    disabled={isEditMode}
-                    className="mt-1"
-                    placeholder="0"
-                  />
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    1 paquete = 4 galletas
-                  </p>
-                </div>
-                <div>
-                  <Label htmlFor="r2-precio">Precio x paq (₡)</Label>
-                  <Input
-                    id="r2-precio"
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={receta2Precio || ''}
-                    onChange={(e) =>
-                      setReceta2Precio(Math.max(0, Number(e.target.value) || 0))
-                    }
-                    className="mt-1"
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Subtotal</Label>
-                  <p className="mt-1.5 text-right text-lg font-semibold tabular-nums">
-                    ₡{subtotalReceta2.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-            </div>
+              );
+            })}
 
             {/* Total */}
             <div className="flex items-center justify-end gap-4 rounded-lg border bg-muted/30 px-4 py-3">
-              <span className="text-sm font-medium">Total:</span>
+              <div className="text-right">
+                {envioPaga > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Sin envío: {formatCurrency(total)}
+                  </p>
+                )}
+                <span className="text-sm font-medium">
+                  Total{envioPaga > 0 ? ' con envío' : ''}:
+                </span>
+              </div>
               <span className="text-xl font-bold tabular-nums">
-                ₡{total.toFixed(2)}
+                {formatCurrency(total + envioPaga)}
               </span>
             </div>
           </div>
+
+          {!isEditMode && (
+            <div className="rounded-lg border">
+              <button
+                type="button"
+                onClick={() => setEnvioOpen((o) => !o)}
+                className="flex w-full items-center justify-between gap-2 px-4 py-3 text-sm font-medium transition-colors hover:bg-muted/40"
+              >
+                <span className="flex items-center gap-2">
+                  <Truck className="size-4 text-muted-foreground" />
+                  Envío
+                  {(envioPaga > 0 || envioCubre > 0) && (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                      Activado
+                    </span>
+                  )}
+                </span>
+                {envioOpen ? (
+                  <ChevronUp className="size-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="size-4 text-muted-foreground" />
+                )}
+              </button>
+              {envioOpen && (
+                <div className="grid gap-4 border-t p-4 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="envio-paga">Paga cliente (₡)</Label>
+                    <Input
+                      id="envio-paga"
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={envioPaga || ''}
+                      onChange={(e) =>
+                        setEnvioPaga(
+                          Math.max(0, Math.round(Number(e.target.value) || 0))
+                        )
+                      }
+                      className="mt-1"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="envio-cubre">Cubrimos (₡)</Label>
+                    <Input
+                      id="envio-cubre"
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={envioCubre || ''}
+                      onChange={(e) =>
+                        setEnvioCubre(
+                          Math.max(0, Math.round(Number(e.target.value) || 0))
+                        )
+                      }
+                      className="mt-1"
+                      placeholder="0"
+                    />
+                  </div>
+                  {(envioPaga > 0 || envioCubre > 0) && (
+                    <p className="text-xs text-muted-foreground sm:col-span-2">
+                      Envío: cliente paga{' '}
+                      <span className="font-medium tabular-nums">
+                        {formatCurrency(envioPaga)}
+                      </span>
+                      , cubrimos{' '}
+                      <span className="font-medium tabular-nums">
+                        {formatCurrency(envioCubre)}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Notas */}
           <div>
@@ -437,7 +511,7 @@ export function VentaForm({
           </Button>
           <Button
             type="submit"
-            disabled={isPending || (receta1Cantidad < 1 && receta2Cantidad < 1) || (!isEditMode && hasStockIssues)}
+            disabled={isPending || !tieneProductos || (!isEditMode && hasStockIssues)}
           >
             {isPending
               ? 'Guardando...'

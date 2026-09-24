@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { DeleteGastoDialog } from '@/components/organisms/DeleteGastoDialog';
 import type { Gasto } from '@/lib/types/gastos';
 import { CATEGORIAS } from '@/lib/validations/gastos';
+import { formatCurrency } from '@/lib/format';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
 
 interface GastosTableProps {
@@ -26,13 +27,6 @@ function formatDate(dateStr: string) {
     month: 'short',
     day: 'numeric',
   }).format(new Date(dateStr));
-}
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'CRC',
-  }).format(value);
 }
 
 export function GastosTable({ gastos }: GastosTableProps) {

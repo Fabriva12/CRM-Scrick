@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import type { Cliente, ClienteActionResult } from '@/lib/types/clientes';
-import { TIPOS, FUENTES } from '@/lib/validations/clientes';
+import { TIPOS, FUENTES, type ClienteTipo } from '@/lib/validations/clientes';
 import { cn } from '@/lib/utils';
 
 interface ClienteFormProps {
@@ -22,6 +22,12 @@ interface ClienteFormProps {
     formData: FormData
   ) => Promise<ClienteActionResult>;
 }
+
+const TIPO_LABELS: Record<ClienteTipo, string> = {
+  B2B: 'Empresa (B2B)',
+  B2C: 'Persona (B2C)',
+  PDV: 'PDV (Punto de Venta)',
+};
 
 function FieldError({ error }: { error?: string[] | null }) {
   if (!error || error.length === 0) return null;
@@ -93,7 +99,7 @@ export function ClienteForm({ cliente, action }: ClienteFormProps) {
                       defaultChecked={cliente?.tipo === tipo}
                       className="size-4 accent-primary"
                     />
-                    <span>{tipo === 'B2B' ? 'Empresa (B2B)' : 'Persona (B2C)'}</span>
+                    <span>{TIPO_LABELS[tipo]}</span>
                   </label>
                 ))}
               </div>

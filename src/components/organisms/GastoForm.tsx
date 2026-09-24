@@ -105,9 +105,9 @@ export function GastoForm({ gasto, action }: GastoFormProps) {
                 id="monto"
                 name="monto"
                 type="number"
-                step="0.01"
-                min="0.01"
-                placeholder="0.00"
+                step="1"
+                min="1"
+                placeholder="0"
                 defaultValue={gasto?.monto ?? ''}
                 aria-invalid={!!state?.errors?.monto}
                 required

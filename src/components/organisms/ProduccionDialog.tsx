@@ -33,6 +33,8 @@ export function ProduccionDialog({
   const [isPending, setIsPending] = useState(false);
 
   const receta = RECETAS.find((r) => r.id === recetaId);
+  const esPaquete = receta ? receta.galletasPorUnidad > 1 : false;
+  const unidadLabel = esPaquete ? 'paquete' : 'galleta';
 
   function handleRecetaChange(id: string) {
     setRecetaId(id);
@@ -70,8 +72,9 @@ export function ProduccionDialog({
             Producir Galletas
           </DialogTitle>
           <DialogDescription>
-            Seleccioná la receta y la cantidad de galletas a producir. Se
-            descontará el stock de los ingredientes automáticamente.
+            Seleccioná la receta y la cantidad de{' '}
+            {esPaquete ? 'paquetes' : 'galletas'} a producir. Se descontará el
+            stock de los ingredientes automáticamente.
           </DialogDescription>
         </DialogHeader>
 
@@ -106,7 +109,7 @@ export function ProduccionDialog({
           {/* Cantidad */}
           <div>
             <Label htmlFor="cantidad">
-              Cantidad de galletas
+              Cantidad de {esPaquete ? 'paquetes' : 'galletas'}
             </Label>
             <Input
               id="cantidad"
@@ -119,6 +122,11 @@ export function ProduccionDialog({
               }
               className="mt-1"
             />
+            {esPaquete && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Cada paquete = {receta?.galletasPorUnidad} galletas
+              </p>
+            )}
           </div>
 
           {/* Resumen de ingredientes */}
@@ -130,7 +138,7 @@ export function ProduccionDialog({
                   Se descontará del stock
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  por galleta → total
+                  por {esPaquete ? 'paquete' : 'galleta'} → total
                 </span>
               </div>
               <ul className="space-y-1.5 text-sm">
@@ -173,7 +181,7 @@ export function ProduccionDialog({
           >
             {isPending
               ? 'Produciendo...'
-              : `Producir ${cantidad} ${cantidad === 1 ? 'galleta' : 'galletas'}`}
+              : `Producir ${cantidad} ${unidadLabel}${cantidad === 1 ? '' : 's'}`}
           </Button>
           <DialogClose render={<Button variant="outline">Cancelar</Button>} />
         </DialogFooter>

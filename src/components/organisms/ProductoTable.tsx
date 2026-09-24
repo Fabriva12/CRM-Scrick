@@ -11,28 +11,35 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/format';
+import { esIngrediente, sufijoStock } from '@/lib/recetas';
 import type { Producto } from '@/lib/types/productos';
 import { Eye, Pencil } from 'lucide-react';
 
-const currency = new Intl.NumberFormat('es-CR', {
-  style: 'currency',
-  currency: 'CRC',
-  minimumFractionDigits: 0,
-});
+function formatGramos(value: number | null | undefined) {
+  if (value == null) return '—';
+  return value.toLocaleString('es-CR', { maximumFractionDigits: 2 });
+}
 
 interface ProductoTableProps {
   productos: Producto[];
+  /** Sección de ingredientes: el encabezado y el valor usan gramos restantes. */
+  esSeccionIngredientes?: boolean;
 }
 
-export function ProductoTable({ productos }: ProductoTableProps) {
+export function ProductoTable({
+  productos,
+  esSeccionIngredientes,
+}: ProductoTableProps) {
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Nombre</TableHead>
-            <TableHead className="hidden sm:table-cell">SKU</TableHead>
-            <TableHead>Stock</TableHead>
+            <TableHead>
+              {esSeccionIngredientes ? 'Gramos restantes' : 'Stock'}
+            </TableHead>
             <TableHead className="hidden sm:table-cell">Costo</TableHead>
             <TableHead className="text-right">Acciones</TableHead>
           </TableRow>
@@ -48,22 +55,40 @@ export function ProductoTable({ productos }: ProductoTableProps) {
                   {producto.nombre}
                 </Link>
               </TableCell>
-              <TableCell className="hidden sm:table-cell text-muted-foreground">
-                {producto.sku || '—'}
-              </TableCell>
               <TableCell
                 className={cn(
                   'tabular-nums whitespace-nowrap',
-                  producto.stock < 50 ? 'font-medium text-red-600' : 'text-muted-foreground'
+                  esSeccionIngredientes
+                    ? Number(producto.gramos_restantes ?? 0) < 50
+                      ? 'font-medium text-red-600'
+                      : 'text-muted-foreground'
+                    : producto.stock < 50
+                      ? 'font-medium text-red-600'
+                      : 'text-muted-foreground'
                 )}
               >
-                {producto.stock}
-                <span className="ml-1 text-xs text-muted-foreground/50">
-                  {producto.unidad || 'unid'}
-                </span>
+                {esSeccionIngredientes
+                  ? formatGramos(producto.gramos_restantes)
+                  : producto.stock}
+                {!esSeccionIngredientes && (
+                  <span className="ml-1 text-xs text-muted-foreground/50">
+                    {sufijoStock(producto.nombre, producto.unidad || 'unid')}
+                  </span>
+                )}
               </TableCell>
               <TableCell className="hidden sm:table-cell text-muted-foreground tabular-nums">
-                {producto.costo ? currency.format(producto.costo) : '—'}
+                {producto.costo != null ? (
+                  <>
+                    {formatCurrency(producto.costo)}
+                    {esIngrediente(producto.nombre) && (
+                      <span className="ml-0.5 text-xs text-muted-foreground/50">
+                        /g
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  '—'
+                )}
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1">

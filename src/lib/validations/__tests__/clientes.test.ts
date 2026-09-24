@@ -203,7 +203,7 @@ describe('clienteUpdateSchema', () => {
 });
 
 describe('TIPOS constant', () => {
-  it('contains B2B and B2C', () => {
-    expect(TIPOS).toEqual(['B2B', 'B2C']);
+  it('contains B2B, B2C and PDV', () => {
+    expect(TIPOS).toEqual(['B2B', 'B2C', 'PDV']);
   });
 });

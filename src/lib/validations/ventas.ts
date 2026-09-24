@@ -11,6 +11,16 @@ export const ventaHeaderSchema = z.object({
   fecha: z.string().min(1, 'Fecha es requerida'),
   estado: z.enum(ESTADOS, { error: 'Estado inválido' }),
   notas: z.string().optional().nullable().default(null),
+  envio_paga_cliente: z
+    .string()
+    .optional()
+    .default('0')
+    .transform((v) => Math.max(0, Math.round(parseFloat(v) || 0))),
+  envio_cubrimos: z
+    .string()
+    .optional()
+    .default('0')
+    .transform((v) => Math.max(0, Math.round(parseFloat(v) || 0))),
 });
 
 export const ventaProductoRowSchema = z.object({

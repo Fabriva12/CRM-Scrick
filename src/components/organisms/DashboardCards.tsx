@@ -1,5 +1,7 @@
 'use client';
 
+import { formatCurrency } from '@/lib/format';
+
 interface DashboardCardsProps {
   totalClientes: number;
   ventasDelMes: number;
@@ -8,13 +10,6 @@ interface DashboardCardsProps {
   cantidadPendientes: number;
   balanceNeto: number;
   unidadesVendidas: number;
-}
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'CRC',
-  }).format(value);
 }
 
 function formatNumber(value: number) {
@@ -48,7 +43,7 @@ export function DashboardCards({
           {formatNumber(unidadesVendidas)}
         </p>
         <p className="mt-1 text-sm text-[#2F3031]/60">
-          Paquetes vendidos
+          Unidades vendidas
         </p>
       </div>
 

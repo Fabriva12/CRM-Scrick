@@ -1,12 +1,13 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { VentaForm } from '@/components/organisms/VentaForm';
 import { createVenta } from '@/actions/ventas';
+import { RECETAS } from '@/lib/recetas';
 import type { Cliente } from '@/lib/types/clientes';
 import type { Producto } from '@/lib/types/productos';
 
 export const dynamic = 'force-dynamic';
 
-const NOMBRES_RECETAS = ['Galleta Proteica Receta 1', 'Galleta Proteica Receta 2'];
+const NOMBRES_RECETAS = RECETAS.map((r) => r.producto_nombre);
 
 export default async function NuevaVentaPage() {
   const supabase = createServiceClient();

@@ -1,15 +1,17 @@
 interface ClienteBadgeProps {
-  tipo: 'B2B' | 'B2C';
+  tipo: 'B2B' | 'B2C' | 'PDV';
 }
 
-const badgeStyles: Record<'B2B' | 'B2C', string> = {
+const badgeStyles: Record<'B2B' | 'B2C' | 'PDV', string> = {
   B2B: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
   B2C: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+  PDV: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300',
 };
 
-const badgeLabels: Record<'B2B' | 'B2C', string> = {
+const badgeLabels: Record<'B2B' | 'B2C' | 'PDV', string> = {
   B2B: 'Empresa',
   B2C: 'Persona',
+  PDV: 'PDV',
 };
 
 export function ClienteBadge({ tipo }: ClienteBadgeProps) {

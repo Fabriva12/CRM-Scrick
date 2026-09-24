@@ -11,6 +11,8 @@ export interface Recipe {
   nombre: string;
   /** Nombre del producto terminado en el catálogo (se crea/actualiza al producir) */
   producto_nombre: string;
+  /** Galletas que representan cada unidad vendida (1 = se vende por galleta, 4 = por paquete) */
+  galletasPorUnidad: number;
   ingredientes: RecipeIngredient[];
 }
 
@@ -18,7 +20,8 @@ export const RECETAS: Recipe[] = [
   {
     id: 'receta-1',
     nombre: 'Receta 1',
-    producto_nombre: 'Galleta Proteica Receta 1',
+    producto_nombre: 'Galleta Receta 1',
+    galletasPorUnidad: 1,
     ingredientes: [
       { nombre: 'Mantequilla de maní', cantidad: 2.46 },
       { nombre: 'Sirope', cantidad: 2.46 },
@@ -37,8 +40,9 @@ export const RECETAS: Recipe[] = [
   },
   {
     id: 'receta-2',
-    nombre: 'Receta 2',
-    producto_nombre: 'Galleta Proteica Receta 2',
+    nombre: 'Galleta Chocolate Blanco',
+    producto_nombre: 'Galleta Chocolate Blanco',
+    galletasPorUnidad: 4,
     ingredientes: [
       { nombre: 'Harina de almendra', cantidad: 9 },
       { nombre: 'Harina de grillo', cantidad: 2.5 },
@@ -54,3 +58,54 @@ export const RECETAS: Recipe[] = [
     ],
   },
 ];
+
+/** Busca la receta cuyo producto terminado coincide con el nombre. */
+export function buscarRecetaPorProducto(
+  nombreProducto: string
+): Recipe | undefined {
+  return RECETAS.find((r) => r.producto_nombre === nombreProducto);
+}
+
+/** True si el nombre corresponde a un ingrediente de alguna receta. */
+export function esIngrediente(nombre: string | null | undefined): boolean {
+  if (!nombre) return false;
+  return RECETAS.some((r) =>
+    r.ingredientes.some((ing) => ing.nombre === nombre)
+  );
+}
+
+/**
+ * Unidad de venta de un producto con receta para mostrar en stock:
+ * 'paq' si la receta se vende por paquete, 'galleta' si se vende por
+ * galleta suelta. Si no hay receta, devuelve el fallback (ej: 'unid').
+ */
+export function sufijoStock(
+  nombre: string | null | undefined,
+  fallback: string
+): string {
+  const receta = buscarRecetaPorProducto(nombre ?? '');
+  if (receta) return receta.galletasPorUnidad > 1 ? 'paq' : 'galleta';
+  return fallback;
+}
+
+/**
+ * Costo por unidad vendida de una receta: suma cantidad × costo de cada
+ * ingrediente. Las cantidades de receta ya son por unidad vendida (receta-2
+ * incluye empaque por paquete de 4 galletas).
+ *
+ * Devuelve null si algún ingrediente no tiene costo cargado: el margen no es
+ * calculable de forma confiable, mejor no mostrarlo a medias.
+ */
+export function calcularCostoReceta(
+  receta: Recipe,
+  costosPorNombre: Record<string, number | null | undefined>
+): number | null {
+  const sinCosto = receta.ingredientes.filter(
+    (ing) => costosPorNombre[ing.nombre] == null
+  );
+  if (sinCosto.length > 0) return null;
+  return receta.ingredientes.reduce(
+    (sum, ing) => sum + ing.cantidad * (costosPorNombre[ing.nombre] ?? 0),
+    0
+  );
+}

@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { VentaEstadoBadge } from '@/components/molecules/VentaEstadoBadge';
 import { DeleteVentaDialog } from '@/components/organisms/DeleteVentaDialog';
 import { DetailRow } from '@/components/molecules/DetailRow';
+import { formatCurrency } from '@/lib/format';
 import type { VentaWithDetails } from '@/lib/types/ventas';
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 
@@ -34,13 +35,6 @@ function formatDate(dateStr: string) {
     month: 'long',
     day: 'numeric',
   }).format(new Date(dateStr));
-}
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'CRC',
-  }).format(value);
 }
 
 export function VentaDetailCard({ venta }: VentaDetailCardProps) {
@@ -73,6 +67,24 @@ export function VentaDetailCard({ venta }: VentaDetailCardProps) {
               value={formatCurrency(venta.monto_total)}
             />
             <DetailRow label="Notas" value={venta.notas} />
+            {venta.envio && (
+              <>
+                <DetailRow
+                  label="Total sin envío"
+                  value={formatCurrency(
+                    venta.monto_total - venta.envio.paga_cliente
+                  )}
+                />
+                <DetailRow
+                  label="Envío (paga cliente)"
+                  value={formatCurrency(venta.envio.paga_cliente)}
+                />
+                <DetailRow
+                  label="Envío (cubrimos)"
+                  value={formatCurrency(venta.envio.cubrimos)}
+                />
+              </>
+            )}
             <DetailRow
               label="Creado"
               value={formatDate(venta.created_at)}
@@ -127,7 +139,7 @@ export function VentaDetailCard({ venta }: VentaDetailCardProps) {
                         colSpan={4}
                         className="text-right font-medium"
                       >
-                        Total:
+                        Total productos:
                       </TableCell>
                       <TableCell className="text-right font-bold tabular-nums">
                         {formatCurrency(subtotalSum)}

@@ -1,6 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { HistorialProduccion } from '@/components/organisms/HistorialProduccion';
 import { ProduccionActionButtons } from '@/components/organisms/ProduccionActionButtons';
+import { esIngrediente, sufijoStock } from '@/lib/recetas';
 import type { HistorialConProducto } from '@/lib/types/produccion';
 import { CookingPot } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,12 +13,16 @@ export default async function InventarioPage() {
   const { data: productos, error: prodError } = await supabase
     .from('productos')
     .select('*')
-    .in('unidad', ['unid'])
     .order('stock', { ascending: true });
 
   if (prodError) {
     throw new Error(`Error al cargar productos: ${prodError.message}`);
   }
+
+  // Paquetes producidos = todo lo que no es ingrediente
+  const paquetes = (productos ?? []).filter(
+    (p) => !esIngrediente(p.nombre)
+  );
 
   const { data: historial, error: histError } = await supabase
     .from('produccion_historial')
@@ -48,7 +53,7 @@ export default async function InventarioPage() {
         <CardContent className="p-6">
           <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
             <CookingPot className="size-5 text-muted-foreground" />
-            Galletas en Stock
+            Productos en Stock
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -59,17 +64,17 @@ export default async function InventarioPage() {
                 </tr>
               </thead>
               <tbody>
-                {productos.map((p) => (
+                {paquetes.map((p) => (
                   <tr key={p.id} className="border-b last:border-0">
                     <td className="py-2">{p.nombre}</td>
                     <td className={`py-2 text-right tabular-nums ${
                       p.stock === 0 ? 'text-red-500 font-medium' : ''
                     }`}>
-                      {p.stock} unid
+                      {p.stock} {sufijoStock(p.nombre, p.unidad || 'unid')}
                     </td>
                   </tr>
                 ))}
-                {productos.length === 0 && (
+                {paquetes.length === 0 && (
                   <tr>
                     <td colSpan={2} className="py-8 text-center text-muted-foreground">
                       No hay galletas producidas

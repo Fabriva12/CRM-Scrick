@@ -1,20 +1,38 @@
 import Link from 'next/link';
 import { createServiceClient } from '@/lib/supabase/server';
 import { ClienteTable } from '@/components/organisms/ClienteTable';
+import { FiltroFuente } from '@/components/organisms/FiltroFuente';
 import { Button } from '@/components/ui/button';
 import { ExportButton } from '@/components/molecules/ExportButton';
 import type { Cliente } from '@/lib/types/clientes';
-import { Plus, Users } from 'lucide-react';
+import { FUENTES } from '@/lib/validations/clientes';
+import { Plus, Users, BarChart3 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ClientesPage() {
+interface ClientesPageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function ClientesPage({
+  searchParams,
+}: ClientesPageProps) {
+  const { fuente } = await searchParams;
+  const fuenteVal =
+    typeof fuente === 'string' &&
+    (FUENTES as readonly string[]).includes(fuente)
+      ? fuente
+      : undefined;
+
   const supabase = createServiceClient();
-  const { data: clientes, error } = await supabase
-    .from('clientes')
-    .select('*')
-    .order('created_at', { ascending: false });
+  let query = supabase.from('clientes').select('*');
+  if (fuenteVal) {
+    query = query.eq('fuente', fuenteVal);
+  }
+  const { data: clientes, error } = await query.order('created_at', {
+    ascending: false,
+  });
 
   if (error) {
     throw new Error(`Error al cargar clientes: ${error.message}`);
@@ -32,6 +50,7 @@ export default async function ClientesPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <FiltroFuente fuente={fuenteVal} />
           {typedClientes.length > 0 && (
             <ExportButton
               data={typedClientes as unknown as Record<string, unknown>[]}
@@ -49,6 +68,13 @@ export default async function ClientesPage() {
               filename="clientes-scrick"
             />
           )}
+          <Button
+            variant="outline"
+            render={<Link href="/clientes/ventas" />}
+          >
+            <BarChart3 className="size-4" />
+            Ver Ventas
+          </Button>
           <Button render={<Link href="/clientes/nuevo" />}>
             <Plus className="size-4" />
             Nuevo Cliente
@@ -60,14 +86,30 @@ export default async function ClientesPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Users className="mb-4 size-12 text-muted-foreground/40" />
-            <p className="mb-2 text-lg font-medium">No hay clientes registrados</p>
-            <p className="mb-6 text-sm text-muted-foreground">
-              Crea tu primer cliente para empezar a gestionar tu CRM.
+            <p className="mb-2 text-lg font-medium">
+              {fuenteVal
+                ? `No hay clientes con fuente "${fuenteVal}"`
+                : 'No hay clientes registrados'}
             </p>
-            <Button render={<Link href="/clientes/nuevo" />}>
-              <Plus className="size-4" />
-              Crear primer cliente
-            </Button>
+            <p className="mb-6 text-sm text-muted-foreground">
+              {fuenteVal
+                ? 'Probá con otra fuente o limpiá el filtro.'
+                : 'Crea tu primer cliente para empezar a gestionar tu CRM.'}
+            </p>
+            {fuenteVal ? (
+              <Button
+                variant="outline"
+                render={<Link href="/clientes" />}
+              >
+                <Users className="size-4" />
+                Ver todos los clientes
+              </Button>
+            ) : (
+              <Button render={<Link href="/clientes/nuevo" />}>
+                <Plus className="size-4" />
+                Crear primer cliente
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (

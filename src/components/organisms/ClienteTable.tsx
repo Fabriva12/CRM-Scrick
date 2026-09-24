@@ -74,13 +74,15 @@ export function ClienteTable({ clientes }: ClienteTableProps) {
                 <TableCell className="hidden sm:table-cell text-muted-foreground">
                   {cliente.ciudad || '—'}
                 </TableCell>
-                {cliente.fuente && (
-                  <TableCell className="hidden md:table-cell">
+                <TableCell className="hidden md:table-cell">
+                  {cliente.fuente ? (
                     <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-[#2F3031]">
                       {cliente.fuente}
                     </span>
-                  </TableCell>
-                )}
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </TableCell>
                 <TableCell className="hidden sm:table-cell text-muted-foreground whitespace-nowrap">
                   {formatDate(cliente.created_at)}
                 </TableCell>

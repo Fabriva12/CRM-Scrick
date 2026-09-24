@@ -1,0 +1,4 @@
+-- Separa ingredientes de paquetes producidos en la vista y en el modelo:
+-- 1) Paquete y descripcion no se usan: se eliminan.
+-- 2) Los ingredientes ya no usan stock (entero, unidades): llevan gramos
+--    restantes (decimal). El paquete producido mantiene stock en unidades.

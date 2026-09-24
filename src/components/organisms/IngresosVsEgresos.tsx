@@ -1,15 +1,10 @@
 'use client';
 
+import { formatCurrency } from '@/lib/format';
+
 interface IngresosVsEgresosProps {
   ingresos: number;
   egresos: number;
-}
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'CRC',
-  }).format(value);
 }
 
 export function IngresosVsEgresos({ ingresos, egresos }: IngresosVsEgresosProps) {

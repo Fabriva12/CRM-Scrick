@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { DeleteGastoDialog } from '@/components/organisms/DeleteGastoDialog';
 import { DetailRow } from '@/components/molecules/DetailRow';
+import { formatCurrency } from '@/lib/format';
 import type { Gasto } from '@/lib/types/gastos';
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 
@@ -25,13 +26,6 @@ function formatDate(dateStr: string) {
     month: 'long',
     day: 'numeric',
   }).format(new Date(dateStr));
-}
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'CRC',
-  }).format(value);
 }
 
 export function GastoDetailCard({ gasto }: GastoDetailCardProps) {

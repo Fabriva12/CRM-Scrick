@@ -3,7 +3,9 @@ import { DashboardCards } from '@/components/organisms/DashboardCards';
 import { IngresosVsEgresos } from '@/components/organisms/IngresosVsEgresos';
 import { UltimasVentas } from '@/components/organisms/UltimasVentas';
 import { InventarioRapido } from '@/components/organisms/InventarioRapido';
+import { PromediosSection } from '@/components/organisms/PromediosSection';
 import { FiltroMes } from '@/components/organisms/FiltroMes';
+import { agruparPromediosPorMes, promedioPrecioUnitario, unidadesDeVenta } from '@/lib/promedios';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,6 +41,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     { data: gastos },
     { data: ultimasVentas },
     { data: productos },
+    { data: ventasPromedios },
   ] = await Promise.all([
     supabase.from('clientes').select('*', { count: 'exact', head: true }),
     supabase
@@ -48,7 +51,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       .lte('fecha', last),
     supabase
       .from('ventas')
-      .select('monto_total')
+      .select('monto_total, venta_productos(cantidad)')
       .eq('estado', 'pagado')
       .gte('fecha', first)
       .lte('fecha', last),
@@ -72,8 +75,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       .limit(5),
     supabase
       .from('productos')
-      .select('id, nombre, sku, stock, unidad, costo')
+      .select('id, nombre, stock, gramos_restantes, unidad, costo')
       .order('stock', { ascending: true }),
+    supabase
+      .from('ventas')
+      .select('fecha, monto_total, venta_productos(cantidad, precio_unitario)')
+      .eq('estado', 'pagado'),
   ]);
 
   // Compute metrics
@@ -86,7 +93,22 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const egresosTotal =
     gastos?.reduce((sum, g) => sum + Number(g.monto), 0) ?? 0;
   const balanceNeto = ingresosTotal - egresosTotal;
-  const unidadesVendidas = ingresosTotal > 0 ? Math.round(ingresosTotal / 1400) : 0;
+
+  // Precio promedio por unidad desde las líneas reales; estima las unidades
+  // de las ventas históricas que no tienen detalle (monto ÷ precio promedio).
+  const precioPromedio = promedioPrecioUnitario(ventasPromedios ?? []);
+  const unidadesVendidas =
+    ingresos.data?.reduce(
+      (sum, v) => sum + unidadesDeVenta(v, precioPromedio),
+      0
+    ) ?? 0;
+
+  // Promedios mensuales de ingresos y unidades (todo el histórico); la
+  // sección filtra por año por su cuenta.
+  const promediosPorMes = agruparPromediosPorMes(
+    ventasPromedios ?? [],
+    precioPromedio
+  );
 
   return (
     <div className="space-y-8">
@@ -111,6 +133,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <IngresosVsEgresos ingresos={ingresosTotal} egresos={egresosTotal} />
         <UltimasVentas ventas={ultimasVentas ?? []} />
       </div>
+
+      <PromediosSection data={promediosPorMes} precioPromedio={precioPromedio} />
 
       <InventarioRapido productos={productos ?? []} />
     </div>

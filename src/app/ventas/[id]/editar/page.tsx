@@ -2,13 +2,14 @@ import { notFound } from 'next/navigation';
 import { createServiceClient } from '@/lib/supabase/server';
 import { VentaForm } from '@/components/organisms/VentaForm';
 import { updateVenta } from '@/actions/ventas';
+import { RECETAS } from '@/lib/recetas';
 import type { Cliente } from '@/lib/types/clientes';
 import type { Producto } from '@/lib/types/productos';
 import type { VentaWithDetails } from '@/lib/types/ventas';
 
 export const dynamic = 'force-dynamic';
 
-const NOMBRES_RECETAS = ['Galleta Proteica Receta 1', 'Galleta Proteica Receta 2'];
+const NOMBRES_RECETAS = RECETAS.map((r) => r.producto_nombre);
 
 export default async function EditarVentaPage({
   params,

@@ -17,7 +17,7 @@ export function AjustarStockButton({ productos }: AjustarStockButtonProps) {
     <>
       <Button variant="secondary" onClick={() => setDialogOpen(true)}>
         <PackagePlus className="size-4" />
-        Añadir
+        Ajustar
       </Button>
       <AjustarStockDialog
         open={dialogOpen}

@@ -79,7 +79,13 @@ export async function POST(request: NextRequest) {
   // Insert venta header
   const { data: venta, error: ventaError } = await supabase
     .from('ventas')
-    .insert({ ...headerResult.data, monto_total: montoTotal })
+    .insert({
+      cliente_id: headerResult.data.cliente_id,
+      fecha: headerResult.data.fecha,
+      estado: headerResult.data.estado,
+      notas: headerResult.data.notas,
+      monto_total: montoTotal,
+    })
     .select()
     .single();
 

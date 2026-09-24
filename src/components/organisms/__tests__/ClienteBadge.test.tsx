@@ -13,6 +13,11 @@ describe('ClienteBadge', () => {
     expect(screen.getByText('Persona')).toBeInTheDocument();
   });
 
+  it('renders PDV badge with label "PDV"', () => {
+    render(<ClienteBadge tipo="PDV" />);
+    expect(screen.getByText('PDV')).toBeInTheDocument();
+  });
+
   it('renders a span element', () => {
     render(<ClienteBadge tipo="B2B" />);
     const badge = screen.getByText('Empresa');

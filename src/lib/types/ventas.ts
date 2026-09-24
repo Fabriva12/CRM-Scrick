@@ -10,6 +10,16 @@ export interface Venta {
   // Joined fields
   clientes?: { nombre: string };
   venta_productos?: VentaProducto[];
+  envio?: VentaEnvio;
+}
+
+export interface VentaEnvio {
+  id: string;
+  venta_id: string;
+  paga_cliente: number;
+  cubrimos: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface VentaProducto {
@@ -33,3 +43,21 @@ export type VentaActionResult = {
   data?: Venta;
   message?: string;
 };
+
+/** Resumen mensual de ventas para la sección "Margen mensual" de Finanzas. */
+export interface MargenMensual {
+  /** Mes en formato YYYY-MM */
+  mes: string;
+  /** Cantidad total de paquetes vendidos */
+  paquetes: number;
+  /** true si el mes incluye paquetes estimados (ventas históricas sin detalle) */
+  paquetesEstimados: boolean;
+  /** Total facturado sin envío (suma de subtotales de productos) */
+  totalFacturado: number;
+  /** Costo total (producto directo o receta); null = faltan costos de ingredientes */
+  costoIngredientes: number | null;
+  /** Precio promedio por paquete */
+  precioPromedio: number;
+  /** Margen como fracción (0.6 = 60%); null = no calculable por falta de costos */
+  margenPct: number | null;
+}

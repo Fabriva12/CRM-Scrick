@@ -2,6 +2,7 @@
 
 import { createServiceClient } from '@/lib/supabase/server';
 import { RECETAS } from '@/lib/recetas';
+import { calcularCostoRecetaProducto } from '@/lib/costoReceta';
 import { revalidatePath } from 'next/cache';
 import type { ProduccionHistorial } from '@/lib/types/produccion';
 
@@ -35,7 +36,7 @@ export async function producir(
   // 1. Buscar ingredientes por nombre
   const { data: productos, error: prodError } = await supabase
     .from('productos')
-    .select('id, nombre, stock')
+    .select('id, nombre, stock, gramos_restantes')
     .in('nombre', receta.ingredientes.map((i) => i.nombre));
 
   if (prodError) {
@@ -59,14 +60,15 @@ export async function producir(
     };
   }
 
-  // 2. Verificar stock suficiente
+  // 2. Verificar gramos suficientes
   const stockErrors: string[] = [];
   for (const ing of receta.ingredientes) {
     const prod = productos.find((p) => p.nombre === ing.nombre)!;
     const necesario = ing.cantidad * cantidad;
-    if (prod.stock < necesario) {
+    const disponible = Number(prod.gramos_restantes ?? 0);
+    if (disponible < necesario) {
       stockErrors.push(
-        `"${ing.nombre}": tenés ${prod.stock}${prod.stock === 1 ? '' : ''}, necesitás ${necesario.toFixed(2)}`
+        `"${ing.nombre}": tenés ${disponible.toFixed(2)}g, necesitás ${necesario.toFixed(2)}g`
       );
     }
   }
@@ -74,12 +76,18 @@ export async function producir(
   if (stockErrors.length > 0) {
     return {
       success: false,
-      error: `Stock insuficiente:\n${stockErrors.join('\n')}`,
+      error: `Gramos insuficientes:\n${stockErrors.join('\n')}`,
     };
   }
 
   // 3. Buscar o crear el producto terminado
   let productoId: string | undefined;
+
+  // Costo automático: el paquete toma el costo por unidad de la receta
+  // (suma de cantidad × costo por gramo de cada ingrediente).
+  const costoUnidad = await calcularCostoRecetaProducto(
+    receta.producto_nombre
+  );
 
   const { data: prodExistente, error: prodExistError } = await supabase
     .from('productos')
@@ -97,9 +105,12 @@ export async function producir(
   if (prodExistente) {
     productoId = prodExistente.id;
     const nuevoStockProd = prodExistente.stock + cantidad;
+    const updateData: Record<string, unknown> = { stock: nuevoStockProd };
+    if (costoUnidad != null) updateData.costo = costoUnidad;
+
     const { error: updateProdError } = await supabase
       .from('productos')
-      .update({ stock: nuevoStockProd })
+      .update(updateData)
       .eq('id', productoId);
 
     if (updateProdError) {
@@ -114,7 +125,7 @@ export async function producir(
       .insert({
         nombre: receta.producto_nombre,
         precio_venta: 1,
-        costo: null,
+        costo: costoUnidad,
         stock: cantidad,
         unidad: 'unid',
       })
@@ -131,21 +142,23 @@ export async function producir(
     productoId = nuevoProducto.id;
   }
 
-  // 4. Descontar stock de ingredientes
+  // 4. Descontar gramos de ingredientes
   for (const ing of receta.ingredientes) {
     const prod = productos.find((p) => p.nombre === ing.nombre)!;
     const descuento = ing.cantidad * cantidad;
-    const nuevoStock = Math.round(prod.stock - descuento);
+    const nuevoStock = Math.round(
+      (Number(prod.gramos_restantes ?? 0) - descuento) * 100
+    ) / 100;
 
     const { error: updateError } = await supabase
       .from('productos')
-      .update({ stock: nuevoStock })
+      .update({ gramos_restantes: nuevoStock })
       .eq('id', prod.id);
 
     if (updateError) {
       return {
         success: false,
-        error: `Error al actualizar stock de "${ing.nombre}": ${updateError.message}`,
+        error: `Error al actualizar gramos de "${ing.nombre}": ${updateError.message}`,
       };
     }
   }
@@ -171,9 +184,10 @@ export async function producir(
 
   revalidatePath('/inventario');
   revalidatePath('/productos');
+  const unidad = receta.galletasPorUnidad > 1 ? 'paquete' : 'galleta';
   return {
     success: true,
-    message: `✅ Producidas ${cantidad} ${cantidad === 1 ? 'galleta' : 'galletas'} — ${receta.nombre}. Stock actualizado: ${receta.producto_nombre}`,
+    message: `✅ Producidas ${cantidad} ${unidad}${cantidad === 1 ? '' : 's'} — ${receta.nombre}. Stock actualizado: ${receta.producto_nombre}`,
   };
 }
 

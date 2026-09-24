@@ -1,13 +1,7 @@
 'use client';
 
+import { formatCurrency } from '@/lib/format';
 import type { ResumenFinanzas } from '@/lib/types/gastos';
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'CRC',
-  }).format(value);
-}
 
 interface ResumenCardsProps {
   resumen: ResumenFinanzas;

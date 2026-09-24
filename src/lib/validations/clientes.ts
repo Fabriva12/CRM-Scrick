@@ -1,12 +1,10 @@
 import { z } from 'zod';
 
-export const TIPOS = ['B2B', 'B2C'] as const;
+export const TIPOS = ['B2B', 'B2C', 'PDV'] as const;
 export type ClienteTipo = (typeof TIPOS)[number];
 
 export const FUENTES = [
-  'Instagram',
-  'Facebook',
-  'WhatsApp',
+  'Redes Sociales',
   'Referido',
   'Contacto Directo',
   'Web',
@@ -16,7 +14,7 @@ export type ClienteFuente = (typeof FUENTES)[number];
 
 export const clienteSchema = z.object({
   nombre: z.string().min(1, 'Nombre es requerido').max(256),
-  tipo: z.enum(TIPOS, { error: 'Tipo debe ser B2B o B2C' }),
+  tipo: z.enum(TIPOS, { error: 'Tipo debe ser B2B, B2C o PDV' }),
   email: z.preprocess(
     (v) => (v === '' ? undefined : v),
     z.string().email('Email inválido').optional().nullable().default(null)

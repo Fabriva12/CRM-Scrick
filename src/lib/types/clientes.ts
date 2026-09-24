@@ -1,7 +1,7 @@
 export interface Cliente {
   id: string;
   nombre: string;
-  tipo: 'B2B' | 'B2C';
+  tipo: 'B2B' | 'B2C' | 'PDV';
   email: string | null;
   telefono: string | null;
   ciudad: string | null;

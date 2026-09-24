@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -11,8 +11,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { esIngrediente, buscarRecetaPorProducto, calcularCostoReceta } from '@/lib/recetas';
+import { calcularCostoPorGramo } from '@/lib/validations/productos';
 import type { Producto, ProductoActionResult } from '@/lib/types/productos';
-import { cn } from '@/lib/utils';
 
 interface ProductoFormProps {
   producto?: Producto;
@@ -20,6 +21,8 @@ interface ProductoFormProps {
     prevState: ProductoActionResult | null,
     formData: FormData
   ) => Promise<ProductoActionResult>;
+  /** Costo por gramo de cada ingrediente, para calcular el costo de paquetes con receta */
+  costosIngredientes?: Record<string, number | null | undefined>;
 }
 
 function FieldError({ error }: { error?: string[] | null }) {
@@ -31,8 +34,41 @@ function FieldError({ error }: { error?: string[] | null }) {
   );
 }
 
-export function ProductoForm({ producto, action }: ProductoFormProps) {
+export function ProductoForm({ producto, action, costosIngredientes }: ProductoFormProps) {
   const [state, formAction, isPending] = useActionState(action, null);
+  const esIngredienteProducto = esIngrediente(producto?.nombre);
+
+  // Paquete con receta: el costo sale de la fórmula (suma de cantidad ×
+  // costo por gramo de cada ingrediente). Solo se muestra en edición, cuando
+  // el nombre fijo permite saber la receta.
+  const recetaProducto = buscarRecetaPorProducto(producto?.nombre ?? '');
+  const costoReceta =
+    recetaProducto && costosIngredientes
+      ? calcularCostoReceta(recetaProducto, costosIngredientes)
+      : null;
+  const sinCostoIngredientes =
+    recetaProducto && costosIngredientes
+      ? recetaProducto.ingredientes.filter(
+          (ing) => costosIngredientes[ing.nombre] == null
+        )
+      : [];
+
+  const [costoTotal, setCostoTotal] = useState<string>(
+    producto?.costo_total != null ? String(producto.costo_total) : ''
+  );
+  const [cantidadComprada, setCantidadComprada] = useState<string>(
+    producto?.cantidad_comprada != null ? String(producto.cantidad_comprada) : ''
+  );
+  const costoPorGramo = calcularCostoPorGramo(
+    Number(costoTotal),
+    Number(cantidadComprada)
+  );
+  const formatoPorGramo = new Intl.NumberFormat('es-CR', {
+    style: 'currency',
+    currency: 'CRC',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 3,
+  });
 
   return (
     <form action={formAction} key={producto?.id ?? 'create'}>
@@ -70,113 +106,137 @@ export function ProductoForm({ producto, action }: ProductoFormProps) {
               <FieldError error={state?.errors?.nombre} />
             </div>
 
-            {/* SKU */}
-            <div>
-              <Label htmlFor="sku">SKU</Label>
-              <Input
-                id="sku"
-                name="sku"
-                defaultValue={producto?.sku ?? ''}
-                placeholder="Código SKU (opcional)"
-                maxLength={50}
-              />
-              <FieldError error={state?.errors?.sku} />
-            </div>
+            {/* Precio de venta: solo productos de receta, no ingredientes */}
+            {!esIngredienteProducto && (
+              <div>
+                <Label htmlFor="precio_venta">
+                  Precio de Venta <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="precio_venta"
+                  name="precio_venta"
+                  type="number"
+                  step="1"
+                  min="1"
+                  defaultValue={producto?.precio_venta ?? ''}
+                  placeholder="0"
+                  aria-invalid={!!state?.errors?.precio_venta}
+                  required
+                />
+                <FieldError error={state?.errors?.precio_venta} />
+              </div>
+            )}
 
-            {/* Unidad */}
-            <div>
-              <Label htmlFor="unidad">Unidad</Label>
-              <Input
-                id="unidad"
-                name="unidad"
-                defaultValue={producto?.unidad ?? ''}
-                placeholder="Ej: pieza, kg, litro"
-                maxLength={50}
-              />
-              <FieldError error={state?.errors?.unidad} />
-            </div>
+            {/* Costo: ingredientes cargan costo total + cantidad comprada */}
+            {esIngredienteProducto ? (
+              <>
+                <div>
+                  <Label htmlFor="costo_total">Costo</Label>
+                  <Input
+                    id="costo_total"
+                    name="costo_total"
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={costoTotal}
+                    onChange={(e) => setCostoTotal(e.target.value)}
+                    placeholder="0"
+                    aria-invalid={!!state?.errors?.costo_total}
+                  />
+                  <FieldError error={state?.errors?.costo_total} />
+                </div>
+                <div>
+                  <Label htmlFor="cantidad_comprada">Cantidad</Label>
+                  <Input
+                    id="cantidad_comprada"
+                    name="cantidad_comprada"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={cantidadComprada}
+                    onChange={(e) => setCantidadComprada(e.target.value)}
+                    placeholder="0"
+                    aria-invalid={!!state?.errors?.cantidad_comprada}
+                  />
+                  <FieldError error={state?.errors?.cantidad_comprada} />
+                </div>
+                <div>
+                  <Label>Costo por gramo</Label>
+                  <p className="mt-1.5 rounded-lg bg-muted/50 px-3 py-2 text-sm font-medium tabular-nums">
+                    {costoPorGramo != null
+                      ? `${formatoPorGramo.format(costoPorGramo)} por gramo`
+                      : 'Cargá ambos montos para calcularlo'}
+                  </p>
+                </div>
+              </>
+            ) : recetaProducto ? (
+              <div>
+                <Label>Costo</Label>
+                <p className="mt-1.5 rounded-lg bg-muted/50 px-3 py-2 text-sm font-medium tabular-nums">
+                  {costoReceta != null ? (
+                    <>
+                      {formatoPorGramo.format(costoReceta)} por unidad —{' '}
+                      <span className="font-normal text-muted-foreground">
+                        calculado con la receta
+                      </span>
+                    </>
+                  ) : (
+                    <span className="font-normal text-muted-foreground">
+                      {sinCostoIngredientes.length > 0
+                        ? `Falta cargar el costo de: ${sinCostoIngredientes
+                            .map((ing) => ing.nombre)
+                            .join(', ')}`
+                        : 'No se puede calcular el costo por la receta'}
+                    </span>
+                  )}
+                </p>
+              </div>
+            ) : (
+              <div>
+                <Label htmlFor="costo">Costo</Label>
+                <Input
+                  id="costo"
+                  name="costo"
+                  type="number"
+                  step="1"
+                  min="0"
+                  defaultValue={producto?.costo ?? ''}
+                  placeholder="0"
+                />
+                <FieldError error={state?.errors?.costo} />
+              </div>
+            )}
 
-            {/* Precio de venta */}
-            <div>
-              <Label htmlFor="precio_venta">
-                Precio de Venta <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="precio_venta"
-                name="precio_venta"
-                type="number"
-                step="0.01"
-                min="0.01"
-                defaultValue={producto?.precio_venta ?? ''}
-                placeholder="0.00"
-                aria-invalid={!!state?.errors?.precio_venta}
-                required
-              />
-              <FieldError error={state?.errors?.precio_venta} />
-            </div>
-
-            {/* Costo */}
-            <div>
-              <Label htmlFor="costo">Costo</Label>
-              <Input
-                id="costo"
-                name="costo"
-                type="number"
-                step="0.01"
-                min="0"
-                defaultValue={producto?.costo ?? ''}
-                placeholder="0.00"
-              />
-              <FieldError error={state?.errors?.costo} />
-            </div>
-
-            {/* Stock */}
-            <div>
-              <Label htmlFor="stock">Stock</Label>
-              <Input
-                id="stock"
-                name="stock"
-                type="number"
-                step="1"
-                min="0"
-                defaultValue={producto?.stock ?? 0}
-                placeholder="0"
-              />
-              <FieldError error={state?.errors?.stock} />
-            </div>
-
-            {/* Paquete */}
-            <div>
-              <Label htmlFor="paquete">Paquete</Label>
-              <Input
-                id="paquete"
-                name="paquete"
-                defaultValue={producto?.paquete ?? ''}
-                placeholder="Nombre del paquete (opcional)"
-                maxLength={100}
-              />
-              <FieldError error={state?.errors?.paquete} />
-            </div>
-
-            {/* Descripción */}
-            <div className="sm:col-span-2">
-              <Label htmlFor="descripcion">Descripción</Label>
-              <textarea
-                id="descripcion"
-                name="descripcion"
-                defaultValue={producto?.descripcion ?? ''}
-                rows={4}
-                placeholder="Descripción del producto..."
-                className={cn(
-                  'flex min-h-[80px] w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors',
-                  'placeholder:text-muted-foreground',
-                  'focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
-                  'disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50',
-                  'aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20'
-                )}
-              />
-              <FieldError error={state?.errors?.descripcion} />
-            </div>
+            {/* Cantidad disponible: gramos para ingredientes, stock para paquetes */}
+            {esIngredienteProducto ? (
+              <div>
+                <Label htmlFor="gramos_restantes">Gramos restantes (g)</Label>
+                <Input
+                  id="gramos_restantes"
+                  name="gramos_restantes"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  defaultValue={producto?.gramos_restantes ?? ''}
+                  placeholder="0"
+                />
+                <FieldError error={state?.errors?.gramos_restantes} />
+              </div>
+            ) : (
+              <div>
+                <Label htmlFor="stock">Stock</Label>
+                <Input
+                  id="stock"
+                  name="stock"
+                  type="number"
+                  step="1"
+                  min="0"
+                  defaultValue={producto?.stock ?? 0}
+                  placeholder="0"
+                />
+                <FieldError error={state?.errors?.stock} />
+              </div>
+            )}
           </div>
         </CardContent>
         <CardFooter className="flex flex-col-reverse justify-between gap-4 sm:flex-row">

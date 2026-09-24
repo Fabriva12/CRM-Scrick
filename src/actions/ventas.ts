@@ -8,11 +8,13 @@ import {
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import type { VentaActionResult, Venta } from '@/lib/types/ventas';
+import { RECETAS } from '@/lib/recetas';
 
-const RECETAS_PRODUCTOS = [
-  { key: 'receta1', nombre: 'Galleta Proteica Receta 1', galletasPorUnidad: 1 },
-  { key: 'receta2', nombre: 'Galleta Proteica Receta 2', galletasPorUnidad: 4 },
-] as const;
+const RECETAS_PRODUCTOS = RECETAS.map((r) => ({
+  key: r.id,
+  nombre: r.producto_nombre,
+  galletasPorUnidad: r.galletasPorUnidad,
+}));
 
 export async function createVenta(
   prevState: VentaActionResult | null,
@@ -24,11 +26,16 @@ export async function createVenta(
     fecha: formData.get('fecha'),
     estado: formData.get('estado'),
     notas: formData.get('notas') || null,
+    envio_paga_cliente: formData.get('envio_paga_cliente') ?? '0',
+    envio_cubrimos: formData.get('envio_cubrimos') ?? '0',
   });
 
   if (!headerResult.success) {
     return { errors: headerResult.error.flatten().fieldErrors };
   }
+
+  const envioPaga = headerResult.data.envio_paga_cliente ?? 0;
+  const envioCubre = headerResult.data.envio_cubrimos ?? 0;
 
   // Read receta quantities and prices
   const lineItems: { key: string; cantidad: number; precio: number }[] = [];
@@ -83,11 +90,13 @@ export async function createVenta(
       return { errors: { _form: [`"${receta.nombre}" no encontrado en el catálogo`] } };
     }
 
-    const stockNecesario = item.cantidad * receta.galletasPorUnidad;
+    const stockNecesario = item.cantidad;
 
     if (stockNecesario > prod.stock) {
+      const unidad =
+        receta.galletasPorUnidad === 1 ? 'unidad' : 'paquete';
       stockErrors.push(
-        `"${receta.nombre}": solicitaste ${item.cantidad} ${item.key === 'receta2' ? 'paquete(s)' : 'unidad(es)'} (${stockNecesario} galletas), hay ${prod.stock} en stock`
+        `"${receta.nombre}": solicitaste ${item.cantidad} ${unidad}${item.cantidad === 1 ? '' : 's'}, hay ${prod.stock} en stock`
       );
       continue;
     }
@@ -116,7 +125,7 @@ export async function createVenta(
       fecha: headerResult.data.fecha,
       estado: headerResult.data.estado,
       notas: headerResult.data.notas,
-      monto_total: montoTotal,
+      monto_total: montoTotal + envioPaga,
     })
     .select()
     .single();
@@ -143,9 +152,7 @@ export async function createVenta(
 
   // Decrement stock (using the multiplier)
   for (const vp of ventaProductosData) {
-    const prod = productoMap.get(
-      [...productoMap.keys()].find((k) => productoMap.get(k)!.id === vp.producto_id)!
-    )!;
+    const prod = [...productoMap.values()].find((p) => p.id === vp.producto_id)!;
 
     const { error: updateError } = await supabase
       .from('productos')
@@ -159,7 +166,35 @@ export async function createVenta(
     }
   }
 
+  // Envío: insertar fila en venta_envios y gasto de transporte si aplica
+  if (envioPaga > 0 || envioCubre > 0) {
+    const { error: envioError } = await supabase
+      .from('venta_envios')
+      .insert({ venta_id: venta.id, paga_cliente: envioPaga, cubrimos: envioCubre });
+
+    if (envioError) {
+      await supabase.from('ventas').delete().eq('id', venta.id);
+      return { errors: { _form: [`Error al guardar el envío: ${envioError.message}`] } };
+    }
+
+    if (envioCubre > 0) {
+      const { error: gastoError } = await supabase.from('gastos').insert({
+        categoria: 'Transporte',
+        descripcion: `Envío — Venta #${venta.id.slice(0, 8)}`,
+        monto: envioCubre,
+        fecha: headerResult.data.fecha,
+        notas: venta.id,
+      });
+
+      if (gastoError) {
+        await supabase.from('ventas').delete().eq('id', venta.id);
+        return { errors: { _form: [`Error al guardar gasto de envío: ${gastoError.message}`] } };
+      }
+    }
+  }
+
   revalidatePath('/ventas');
+  revalidatePath('/finanzas');
   redirect('/ventas');
 }
 
@@ -180,9 +215,12 @@ export async function updateVenta(
   }
 
   const supabase = createServiceClient();
-  const { data, error } = await supabase
+  const ventaData = { ...headerResult.data };
+  delete ventaData.envio_paga_cliente;
+  delete ventaData.envio_cubrimos;
+  const { error } = await supabase
     .from('ventas')
-    .update(headerResult.data)
+    .update(ventaData)
     .eq('id', id)
     .select()
     .single();
@@ -196,10 +234,6 @@ export async function updateVenta(
   redirect('/ventas');
 }
 
-const RECETA_MULTIPLIER = new Map(
-  RECETAS_PRODUCTOS.map((r) => [r.nombre, r.galletasPorUnidad])
-);
-
 export async function deleteVenta(
   id: string
 ): Promise<{ success: boolean; error?: string }> {
@@ -212,6 +246,20 @@ export async function deleteVenta(
 
   if (fetchError) {
     return { success: false, error: fetchError.message };
+  }
+
+  // Borrar gasto de envío asociado si existe (notas = venta.id)
+  const { data: envios } = await supabase
+    .from('venta_envios')
+    .select('id')
+    .eq('venta_id', id);
+
+  if (envios && envios.length > 0) {
+    await supabase
+      .from('gastos')
+      .delete()
+      .eq('notas', id)
+      .eq('categoria', 'Transporte');
   }
 
   const { error } = await supabase.from('ventas').delete().eq('id', id);
@@ -229,17 +277,16 @@ export async function deleteVenta(
         .single();
 
       if (prod) {
-        const nombre = (vp as unknown as { productos: { nombre: string } }).productos.nombre;
-        const multiplier = RECETA_MULTIPLIER.get(nombre as 'Galleta Proteica Receta 1' | 'Galleta Proteica Receta 2') ?? 1;
         await supabase
           .from('productos')
-          .update({ stock: prod.stock + vp.cantidad * multiplier })
+          .update({ stock: prod.stock + vp.cantidad })
           .eq('id', vp.producto_id);
       }
     }
   }
 
   revalidatePath('/ventas');
+  revalidatePath('/finanzas');
   return { success: true };
 }
 
@@ -250,7 +297,7 @@ export async function getVentaWithDetails(
   const { data, error } = await supabase
     .from('ventas')
     .select(
-      '*, clientes!inner(nombre), venta_productos(*, productos!inner(nombre, sku))'
+      '*, clientes!inner(nombre), venta_productos(*, productos!inner(nombre, sku)), venta_envios(*)'
     )
     .eq('id', id)
     .single();
@@ -259,5 +306,9 @@ export async function getVentaWithDetails(
     return { error: error.message };
   }
 
-  return { data: data as unknown as Venta };
+  const raw = data as unknown as Venta & { venta_envios?: Venta['envio'][] };
+  const { venta_envios, ...rest } = raw;
+  return {
+    data: { ...rest, envio: venta_envios?.[0] ?? null } as unknown as Venta,
+  };
 }

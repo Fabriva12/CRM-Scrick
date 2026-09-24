@@ -11,8 +11,10 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { VentaEstadoBadge } from "@/components/molecules/VentaEstadoBadge";
 import { DeleteVentaDialog } from "@/components/organisms/DeleteVentaDialog";
+import { formatCurrency } from "@/lib/format";
 import type { Venta } from "@/lib/types/ventas";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 
@@ -21,11 +23,20 @@ interface VentaTableProps {
 }
 
 export function VentaTable({ ventas }: VentaTableProps) {
+  const [busqueda, setBusqueda] = useState("");
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     id: string;
     label: string;
   }>({ open: false, id: "", label: "" });
+
+  const filtered = ventas.filter(
+    (venta) =>
+      !busqueda.trim() ||
+      venta.clientes?.nombre
+        .toLowerCase()
+        .includes(busqueda.trim().toLowerCase())
+  );
 
   function handleDeleteClick(venta: Venta) {
     const label = `Venta #${venta.id.slice(0, 8)}`;
@@ -40,13 +51,6 @@ export function VentaTable({ ventas }: VentaTableProps) {
     }).format(new Date(dateStr));
   }
 
-  function formatCurrency(value: number) {
-    return new Intl.NumberFormat("es-MX", {
-      style: "currency",
-      currency: "CRC",
-    }).format(value);
-  }
-
   function notaLegible(nota: string | null): string | null {
     if (!nota) return null;
     const clean = nota.replace(/^Venta:\s*/i, "").trim();
@@ -55,6 +59,15 @@ export function VentaTable({ ventas }: VentaTableProps) {
 
   return (
     <>
+      <div className="mb-4">
+        <Input
+          type="search"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar por cliente..."
+          className="h-9 sm:max-w-xs"
+        />
+      </div>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -67,7 +80,7 @@ export function VentaTable({ ventas }: VentaTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {ventas.map((venta) => (
+            {filtered.map((venta) => (
               <TableRow key={venta.id}>
                 <TableCell className="min-w-0 font-medium">
                   <Link
@@ -127,6 +140,16 @@ export function VentaTable({ ventas }: VentaTableProps) {
                 </TableCell>
               </TableRow>
             ))}
+            {filtered.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={5}
+                  className="py-8 text-center text-muted-foreground"
+                >
+                  No hay ventas que coincidan con el filtro
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>

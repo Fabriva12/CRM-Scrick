@@ -1,6 +1,7 @@
 "use client";
 
 import { VentaEstadoBadge } from "@/components/molecules/VentaEstadoBadge";
+import { formatCurrency } from "@/lib/format";
 
 interface UltimaVenta {
   id: string;
@@ -13,13 +14,6 @@ interface UltimaVenta {
 
 interface UltimasVentasProps {
   ventas: UltimaVenta[];
-}
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("es-MX", {
-    style: "currency",
-    currency: "CRC",
-  }).format(value);
 }
 
 function formatDate(dateStr: string) {
