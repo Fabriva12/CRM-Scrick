@@ -5,13 +5,19 @@ import type { ResumenFinanzas } from '@/lib/types/gastos';
 
 interface ResumenCardsProps {
   resumen: ResumenFinanzas;
+  materialesValor: number;
+  materialesSinCosto: number;
 }
 
-export function ResumenCards({ resumen }: ResumenCardsProps) {
+export function ResumenCards({
+  resumen,
+  materialesValor,
+  materialesSinCosto,
+}: ResumenCardsProps) {
   const isPositive = resumen.balance_neto >= 0;
 
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {/* Ingresos Totales */}
       <div className="rounded-xl bg-[#FEA372]/15 p-5 ring-1 ring-[#FEA372]/30">
         <p className="text-sm font-medium text-[#2F3031]/70">INGRESOS TOTALES</p>
@@ -52,6 +58,19 @@ export function ResumenCards({ resumen }: ResumenCardsProps) {
         >
           {formatCurrency(resumen.balance_neto)}
         </p>
+      </div>
+
+      {/* Materiales en stock */}
+      <div className="rounded-xl bg-amber-50 p-5 ring-1 ring-amber-200 dark:bg-amber-900/20 dark:ring-amber-800/30">
+        <p className="text-sm font-medium text-[#2F3031]/70">MATERIALES EN STOCK</p>
+        <p className="mt-2 text-2xl font-bold tabular-nums text-[#2F3031]">
+          {formatCurrency(materialesValor)}
+        </p>
+        {materialesSinCosto > 0 && (
+          <p className="mt-1 text-xs text-amber-700/70">
+            {materialesSinCosto} ingrediente{materialesSinCosto !== 1 ? 's' : ''} sin costo cargado
+          </p>
+        )}
       </div>
     </div>
   );

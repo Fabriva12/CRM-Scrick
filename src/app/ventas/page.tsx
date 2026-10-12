@@ -7,6 +7,9 @@ import { ExportButton } from '@/components/molecules/ExportButton';
 import type { Venta } from '@/lib/types/ventas';
 import { Plus, Receipt } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { VentaResumenCards } from '@/components/organisms/VentaResumenCards';
+import { VentaListaColapsable } from '@/components/organisms/VentaListaColapsable';
+import { resumirVentas } from '@/lib/ventas';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +47,7 @@ export default async function VentasPage({ searchParams }: VentasPageProps) {
   }
 
   const typedVentas = ventas as unknown as Venta[];
+  const resumen = resumirVentas(typedVentas);
 
   return (
     <div className="space-y-6">
@@ -91,7 +95,12 @@ export default async function VentasPage({ searchParams }: VentasPageProps) {
           </CardContent>
         </Card>
       ) : (
-        <VentaTable ventas={typedVentas} />
+        <>
+          <VentaResumenCards resumen={resumen} />
+          <VentaListaColapsable count={typedVentas.length}>
+            <VentaTable ventas={typedVentas} />
+          </VentaListaColapsable>
+        </>
       )}
     </div>
   );

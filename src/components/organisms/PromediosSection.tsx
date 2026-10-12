@@ -84,7 +84,7 @@ export function PromediosSection({ data, precioPromedio }: PromediosSectionProps
           </div>
         ) : (
           <>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4">
               <div className="min-w-0 overflow-hidden rounded-xl bg-green-50 p-5 ring-1 ring-green-200">
                 <span className="text-2xl">💰</span>
                 <p className="mt-2 text-lg font-bold tabular-nums sm:text-2xl text-green-700 break-all">

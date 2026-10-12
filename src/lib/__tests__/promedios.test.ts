@@ -3,6 +3,7 @@ import {
   agruparPromediosPorMes,
   calcularPromedios,
   promedioPrecioUnitario,
+  serieIngresosMensuales,
 } from '@/lib/promedios';
 
 describe('promedioPrecioUnitario', () => {
@@ -199,5 +200,39 @@ describe('calcularPromedios', () => {
     expect(p.mesesConVentas).toBe(0);
     expect(p.ingresoPromedioMensual).toBeNull();
     expect(p.unidadesPromedioMensuales).toBeNull();
+  });
+});
+
+describe('serieIngresosMensuales', () => {
+  const meses = [
+    {
+      mes: '2026-01',
+      ingresos: 100,
+      unidades: 1,
+      unidadesReales: 1,
+      unidadesEstimadas: 0,
+    },
+    {
+      mes: '2026-03',
+      ingresos: 300,
+      unidades: 3,
+      unidadesReales: 3,
+      unidadesEstimadas: 0,
+    },
+  ];
+
+  it('devuelve los 12 meses de un año, con ceros donde no hay datos', () => {
+    const serie = serieIngresosMensuales(meses, '2026');
+    expect(serie).toHaveLength(12);
+    expect(serie[0]).toEqual({ mes: '2026-01', etiqueta: 'ene', ingresos: 100 });
+    expect(serie[1]).toEqual({ mes: '2026-02', etiqueta: 'feb', ingresos: 0 });
+    expect(serie[2]).toEqual({ mes: '2026-03', etiqueta: 'mar', ingresos: 300 });
+  });
+
+  it('sin año devuelve los últimos N meses anclados al último mes con datos', () => {
+    const serie = serieIngresosMensuales(meses, null, 3);
+    expect(serie.map((p) => p.mes)).toEqual(['2026-01', '2026-02', '2026-03']);
+    expect(serie[1].ingresos).toBe(0);
+    expect(serie[2].ingresos).toBe(300);
   });
 });

@@ -14,9 +14,16 @@ function generarLote(): string {
   return `${y}${m}${d}`;
 }
 
+/** Ingrediente faltante: disponible === null → no existe en el catálogo. */
+export interface IngredienteFaltante {
+  nombre: string;
+  disponible: number | null;
+  necesario: number;
+}
+
 export type ProducirResultado =
   | { success: true; message: string }
-  | { success: false; error: string };
+  | { success: false; error: string; faltantes?: IngredienteFaltante[] };
 
 export async function producir(
   recetaId: string,
@@ -57,26 +64,32 @@ export async function producir(
     return {
       success: false,
       error: `Faltan ingredientes en el catálogo: ${faltantes.map((i) => i.nombre).join(', ')}`,
+      faltantes: faltantes.map((ing) => ({
+        nombre: ing.nombre,
+        disponible: null,
+        necesario: ing.cantidad * cantidad,
+      })),
     };
   }
 
   // 2. Verificar gramos suficientes
-  const stockErrors: string[] = [];
+  const stockFaltantes: IngredienteFaltante[] = [];
   for (const ing of receta.ingredientes) {
     const prod = productos.find((p) => p.nombre === ing.nombre)!;
     const necesario = ing.cantidad * cantidad;
     const disponible = Number(prod.gramos_restantes ?? 0);
     if (disponible < necesario) {
-      stockErrors.push(
-        `"${ing.nombre}": tenés ${disponible.toFixed(2)}g, necesitás ${necesario.toFixed(2)}g`
-      );
+      stockFaltantes.push({ nombre: ing.nombre, disponible, necesario });
     }
   }
 
-  if (stockErrors.length > 0) {
+  if (stockFaltantes.length > 0) {
     return {
       success: false,
-      error: `Gramos insuficientes:\n${stockErrors.join('\n')}`,
+      error: `Gramos insuficientes: ${stockFaltantes
+        .map((f) => f.nombre)
+        .join(', ')}`,
+      faltantes: stockFaltantes,
     };
   }
 

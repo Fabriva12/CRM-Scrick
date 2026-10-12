@@ -15,9 +15,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RECETAS } from '@/lib/recetas';
-import { producir } from '@/actions/produccion';
+import { producir, type IngredienteFaltante } from '@/actions/produccion';
 import { cn } from '@/lib/utils';
-import { CookingPot, Package, AlertTriangle } from 'lucide-react';
+import { CookingPot, Package, AlertTriangle, X } from 'lucide-react';
+
+function formatGramos(value: number) {
+  return value.toLocaleString('es-CR', { maximumFractionDigits: 2 });
+}
 
 interface ProduccionDialogProps {
   open: boolean;
@@ -31,6 +35,9 @@ export function ProduccionDialog({
   const [recetaId, setRecetaId] = useState<string>(RECETAS[0]?.id ?? '');
   const [cantidad, setCantidad] = useState<number>(1);
   const [isPending, setIsPending] = useState(false);
+  const [faltantes, setFaltantes] = useState<IngredienteFaltante[] | null>(
+    null
+  );
 
   const receta = RECETAS.find((r) => r.id === recetaId);
   const esPaquete = receta ? receta.galletasPorUnidad > 1 : false;
@@ -39,6 +46,7 @@ export function ProduccionDialog({
   function handleRecetaChange(id: string) {
     setRecetaId(id);
     setCantidad(1);
+    setFaltantes(null);
   }
 
   async function handleSubmit() {
@@ -51,6 +59,8 @@ export function ProduccionDialog({
         toast.success(result.message);
         onOpenChange(false);
         setCantidad(1);
+      } else if (result.faltantes && result.faltantes.length > 0) {
+        setFaltantes(result.faltantes);
       } else {
         toast.error(result.error);
       }
@@ -64,6 +74,7 @@ export function ProduccionDialog({
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh]">
         <DialogHeader>
@@ -187,5 +198,77 @@ export function ProduccionDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Modal de materiales faltantes — solo se cierra con la X */}
+    <Dialog
+      open={faltantes !== null}
+      onOpenChange={() => {}}
+      disablePointerDismissal
+    >
+      <DialogContent
+        className="sm:max-w-[min(50vw,640px)] max-h-[80vh] flex flex-col"
+        showCloseButton={false}
+      >
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base text-destructive">
+            <AlertTriangle className="size-5 shrink-0" />
+            Faltan materiales para producir
+          </DialogTitle>
+          <DialogDescription>
+            No alcanza con el stock actual para producir {cantidad}{' '}
+            {esPaquete ? `paquete${cantidad === 1 ? '' : 's'}` : `galleta${cantidad === 1 ? '' : 's'}`}
+            {receta ? ` de ${receta.nombre}` : ''}. Revisá lo que falta:
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="-mx-1 overflow-y-auto px-1">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-xs uppercase text-muted-foreground">
+                <th className="py-2 pr-3 font-medium">Ingrediente</th>
+                <th className="py-2 pr-3 text-right font-medium">Tenés</th>
+                <th className="py-2 pr-3 text-right font-medium">Necesitás</th>
+                <th className="py-2 text-right font-medium">Falta</th>
+              </tr>
+            </thead>
+            <tbody>
+              {faltantes?.map((f) => (
+                <tr
+                  key={f.nombre}
+                  className="border-b border-border/40 last:border-0"
+                >
+                  <td className="py-2.5 pr-3 font-medium">{f.nombre}</td>
+                  <td className="py-2.5 pr-3 text-right tabular-nums text-muted-foreground">
+                    {f.disponible == null
+                      ? '—'
+                      : `${formatGramos(f.disponible)} g`}
+                  </td>
+                  <td className="py-2.5 pr-3 text-right tabular-nums">
+                    {formatGramos(f.necesario)} g
+                  </td>
+                  <td className="py-2.5 text-right font-semibold tabular-nums text-destructive">
+                    {f.disponible == null
+                      ? 'No está en el catálogo'
+                      : `Faltan ${formatGramos(f.necesario - f.disponible)} g`}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="-mx-4 -mb-4 flex justify-end rounded-b-xl border-t bg-muted/50 p-4">
+          <Button
+            variant="outline"
+            onClick={() => setFaltantes(null)}
+            aria-label="Cerrar aviso de materiales faltantes"
+          >
+            <X className="size-4" />
+            Entendido
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

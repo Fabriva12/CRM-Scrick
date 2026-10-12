@@ -156,3 +156,53 @@ export function calcularPromedios(
     usandoEstimacion: unidadesEstimadasTotales > 0,
   };
 }
+
+export const MESES_ABREV = [
+  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+];
+
+export interface PuntoIngresoMes {
+  /** Mes en formato YYYY-MM */
+  mes: string;
+  /** Etiqueta corta del mes (ej: "ene"). */
+  etiqueta: string;
+  ingresos: number;
+}
+
+/**
+ * Serie mensual continua de ingresos para el gráfico de barras.
+ * Con `anio` devuelve los 12 meses de ese año; sin `anio`, los últimos
+ * `ultimos` meses anclados al último mes con datos (o al mes actual).
+ */
+export function serieIngresosMensuales(
+  meses: ResumenMes[],
+  anio: string | null,
+  ultimos = 12
+): PuntoIngresoMes[] {
+  const porMes = new Map(meses.map((m) => [m.mes, m.ingresos]));
+
+  if (anio) {
+    return Array.from({ length: 12 }, (_, i) => {
+      const mes = `${anio}-${String(i + 1).padStart(2, '0')}`;
+      return { mes, etiqueta: MESES_ABREV[i], ingresos: porMes.get(mes) ?? 0 };
+    });
+  }
+
+  const ultimoMes =
+    meses.length > 0
+      ? meses[meses.length - 1].mes
+      : new Date().toISOString().slice(0, 7);
+  const [year, month] = ultimoMes.split('-').map(Number);
+
+  return Array.from({ length: ultimos }, (_, idx) => {
+    const offset = ultimos - 1 - idx;
+    const d = new Date(year, month - 1 - offset, 1);
+    const mes = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return {
+      mes,
+      etiqueta: MESES_ABREV[d.getMonth()],
+      ingresos: porMes.get(mes) ?? 0,
+    };
+  });
+}

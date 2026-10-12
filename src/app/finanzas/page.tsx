@@ -7,10 +7,17 @@ import { Button } from '@/components/ui/button';
 import { ExportButton } from '@/components/molecules/ExportButton';
 import { Card, CardContent } from '@/components/ui/card';
 import { MargenMensualTable } from '@/components/organisms/MargenMensualTable';
+import { GastoPorMesChart } from '@/components/organisms/GastoPorMesChart';
+import { GastosPorCategoriaChart } from '@/components/organisms/GastosPorCategoriaChart';
 import type { Gasto, ResumenFinanzas } from '@/lib/types/gastos';
 import type { MargenMensual } from '@/lib/types/ventas';
-import { RECETAS, buscarRecetaPorProducto, calcularCostoReceta } from '@/lib/recetas';
+import { calcularCostoPaquetes, calcularMargen } from '@/lib/margen';
 import { promedioPrecioUnitario, unidadesDeVenta } from '@/lib/promedios';
+import { calcularValorMateriales } from '@/lib/inventario';
+import {
+  agruparGastosPorCategoria,
+  serieGastosMensuales,
+} from '@/lib/gastos-resumen';
 import { Plus, Wallet } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -74,31 +81,24 @@ export default async function FinanzasPage({ searchParams }: FinanzasPageProps) 
     balance_neto: ingresos_totales - egresos_totales,
   };
 
-  // Fetch paid sales with products + costs for monthly margin
+  // Valor actual del inventario de ingredientes (no depende del mes filtrado).
+  const { data: productosData } = await supabase
+    .from('productos')
+    .select('nombre, costo, costo_total, cantidad_comprada, gramos_restantes');
+  const materiales = calcularValorMateriales(productosData ?? []);
+
+  // Fetch paid sales with products for monthly margin
   const { data: ventasMargen } = await supabase
     .from('ventas')
     .select(
-      'fecha, monto_total, venta_productos(cantidad, subtotal, precio_unitario, productos(nombre, costo))'
+      'fecha, monto_total, venta_productos(cantidad, subtotal, precio_unitario)'
     )
     .eq('estado', 'pagado');
 
-  // Costos de todo el catálogo: costo directo del producto o de ingredientes de receta
-  const { data: productosCosto } = await supabase
-    .from('productos')
-    .select('nombre, costo');
-
-  const costosPorNombre: Record<string, number | null> = {};
-  for (const p of productosCosto ?? []) {
-    costosPorNombre[p.nombre] = p.costo == null ? null : Number(p.costo);
-  }
-
-  // Ingredientes sin costo cargado: bloquean el margen calculado por receta
-  const faltantesSet = new Set<string>();
-  for (const receta of RECETAS) {
-    for (const ing of receta.ingredientes) {
-      if (costosPorNombre[ing.nombre] == null) faltantesSet.add(ing.nombre);
-    }
-  }
+  // Gastos de todo el histórico para la serie mensual del gráfico de línea.
+  const { data: gastosSerie } = await supabase
+    .from('gastos')
+    .select('monto, fecha');
 
   // Precio promedio ponderado de las líneas reales; se usa para estimar los
   // paquetes de las ventas históricas que no tienen detalle (mismo criterio
@@ -113,62 +113,36 @@ export default async function FinanzasPage({ searchParams }: FinanzasPageProps) 
 
     let paquetes = 0;
     let totalFacturado = 0;
-    let costoIngredientes: number | null = 0;
 
     if (conDetalle) {
       for (const vp of lineas) {
-        const cantidad = Number(vp.cantidad) || 0;
-        // venta_productos.producto_id → productos es muchos-a-uno: PostgREST
-        // devuelve objeto aunque el tipado infiere array. Soporta ambas formas.
-        const prod = vp.productos as unknown as
-          | { nombre?: string | null; costo?: number | null }
-          | ({ nombre?: string | null; costo?: number | null } | null)[];
-        const p = Array.isArray(prod) ? prod[0] : prod;
-
-        // Costo por unidad: costo manual del producto; si no tiene, receta
-        let costoUnidad: number | null =
-          p?.costo == null ? null : Number(p.costo);
-        if (costoUnidad == null && p?.nombre) {
-          const receta = buscarRecetaPorProducto(p.nombre);
-          if (receta) costoUnidad = calcularCostoReceta(receta, costosPorNombre);
-        }
-
-        paquetes += cantidad;
+        paquetes += Number(vp.cantidad) || 0;
         totalFacturado += Number(vp.subtotal) || 0;
-        if (costoIngredientes !== null) {
-          costoIngredientes =
-            costoUnidad == null
-              ? null
-              : costoIngredientes + cantidad * costoUnidad;
-        }
       }
     } else {
       // Ventas históricas sin detalle de productos: se estima el total de
-      // paquetes con monto ÷ precio promedio. Sin líneas no hay costo por
-      // receta, así que el margen del mes con estas ventas queda sin calcular.
+      // paquetes con monto ÷ precio promedio.
       paquetes += unidadesDeVenta(venta, precioPromedio);
       totalFacturado += Number(venta.monto_total) || 0;
-      costoIngredientes = null;
     }
+
+    const costoTotal = calcularCostoPaquetes(paquetes);
 
     const prev = margenPorMes.get(mes);
     if (prev) {
       prev.paquetes += paquetes;
       prev.totalFacturado += totalFacturado;
       prev.paquetesEstimados = prev.paquetesEstimados || !conDetalle;
-      prev.costoIngredientes =
-        prev.costoIngredientes != null && costoIngredientes != null
-          ? prev.costoIngredientes + costoIngredientes
-          : null;
+      prev.costoTotal += costoTotal;
     } else {
       margenPorMes.set(mes, {
         mes,
         paquetes,
         totalFacturado,
-        costoIngredientes,
+        costoTotal,
         paquetesEstimados: !conDetalle,
         precioPromedio: 0,
-        margenPct: null,
+        margenPct: 0,
       });
     }
   }
@@ -178,13 +152,20 @@ export default async function FinanzasPage({ searchParams }: FinanzasPageProps) 
     .map((m) => ({
       ...m,
       precioPromedio: m.paquetes > 0 ? m.totalFacturado / m.paquetes : 0,
-      margenPct:
-        m.totalFacturado > 0 && m.costoIngredientes != null
-          ? (m.totalFacturado - m.costoIngredientes) / m.totalFacturado
-          : null,
+      margenPct: calcularMargen(m.totalFacturado, m.costoTotal) ?? 0,
     }));
 
   const typedGastos = gastosData as unknown as Gasto[];
+
+  // Serie continua del gráfico de línea: 12 meses del año filtrado, o los
+  // últimos 12 meses con datos cuando no hay filtro de mes.
+  const serieGastos = serieGastosMensuales(
+    gastosSerie ?? [],
+    mesVal ? mesVal.slice(0, 4) : null
+  );
+
+  // Gastos del período filtrado agrupados por categoría para el donut.
+  const gastosPorCategoria = agruparGastosPorCategoria(typedGastos);
 
   return (
     <div className="space-y-6">
@@ -218,13 +199,22 @@ export default async function FinanzasPage({ searchParams }: FinanzasPageProps) 
       </div>
 
       {/* Resumen Cards */}
-      <ResumenCards resumen={resumen} />
+      <ResumenCards
+        resumen={resumen}
+        materialesValor={materiales.valor}
+        materialesSinCosto={materiales.sinCosto}
+      />
+
+      {/* Gráficos */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <GastoPorMesChart serie={serieGastos} mesDestacado={mesVal ?? null} />
+        </div>
+        <GastosPorCategoriaChart datos={gastosPorCategoria} />
+      </div>
 
       {/* Margen mensual */}
-      <MargenMensualTable
-        months={margenes}
-        faltantes={[...faltantesSet].sort()}
-      />
+      <MargenMensualTable months={margenes} />
 
       {/* Gastos Section */}
       <div>

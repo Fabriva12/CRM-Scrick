@@ -54,10 +54,10 @@ export interface MargenMensual {
   paquetesEstimados: boolean;
   /** Total facturado sin envío (suma de subtotales de productos) */
   totalFacturado: number;
-  /** Costo total (producto directo o receta); null = faltan costos de ingredientes */
-  costoIngredientes: number | null;
+  /** Costo total al costo fijo por paquete (paquetes × COSTO_PAQUETE) */
+  costoTotal: number;
   /** Precio promedio por paquete */
   precioPromedio: number;
-  /** Margen como fracción (0.6 = 60%); null = no calculable por falta de costos */
-  margenPct: number | null;
+  /** Margen como fracción (0.6 = 60%) */
+  margenPct: number;
 }

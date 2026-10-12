@@ -8,8 +8,6 @@ import type { MargenMensual } from '@/lib/types/ventas';
 
 interface MargenMensualTableProps {
   months: MargenMensual[];
-  /** Ingredientes sin costo cargado (bloquean el margen por receta) */
-  faltantes?: string[];
 }
 
 function formatMes(mes: string): string {
@@ -21,7 +19,7 @@ function formatMes(mes: string): string {
   }).format(date);
 }
 
-export function MargenMensualTable({ months, faltantes }: MargenMensualTableProps) {
+export function MargenMensualTable({ months }: MargenMensualTableProps) {
   const [filtroMes, setFiltroMes] = useState<string>('');
 
   const visible = useMemo(() => {
@@ -35,8 +33,7 @@ export function MargenMensualTable({ months, faltantes }: MargenMensualTableProp
     return null;
   }
 
-  const margenColor = (margenPct: number | null) => {
-    if (margenPct == null) return 'text-muted-foreground';
+  const margenColor = (margenPct: number) => {
     if (margenPct >= 0.5) return 'text-green-700 dark:text-green-300';
     if (margenPct >= 0.35) return 'text-amber-600 dark:text-amber-300';
     return 'text-red-700 dark:text-red-300';
@@ -63,14 +60,6 @@ export function MargenMensualTable({ months, faltantes }: MargenMensualTableProp
           ))}
         </select>
       </div>
-
-      {faltantes && faltantes.length > 0 && (
-        <p className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-          Faltan costos de ingredientes para calcular el margen por receta:{' '}
-          {faltantes.join(', ')}. Cargá el costo de cada uno desde la sección
-          Productos.
-        </p>
-      )}
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">

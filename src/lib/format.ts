@@ -11,8 +11,14 @@ export function formatCurrency(value: number | null): string {
   return CURRENCY.format(value);
 }
 
-/** Formatea un porcentaje (0.6 → "60%"). */
+/** Formatea un porcentaje con 1 decimal (0.6 → "60,0%"). */
+const PERCENT = new Intl.NumberFormat('es-CR', {
+  style: 'percent',
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
 export function formatPercent(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
-  return `${Math.round(value * 100)}%`;
+  return PERCENT.format(value);
 }

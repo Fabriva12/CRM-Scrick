@@ -79,6 +79,36 @@ export default async function ProductosPage() {
         </Card>
       ) : (
         <>
+          {/* Paquetes producidos */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="flex items-center gap-2 text-lg font-semibold">
+                  <Package className="size-5 text-muted-foreground" />
+                  Paquetes producidos
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                    {paquetes.length}
+                  </span>
+                </h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  render={<Link href="/productos/nuevo" />}
+                >
+                  <Plus className="size-4" />
+                  Nuevo
+                </Button>
+              </div>
+              {paquetes.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  Los paquetes se crean al producir galletas
+                </p>
+              ) : (
+                <ProductoTable productos={paquetes} />
+              )}
+            </CardContent>
+          </Card>
+
           {/* Ingredientes */}
           <Card>
             <CardContent className="p-6">
@@ -108,36 +138,6 @@ export default async function ProductosPage() {
                   productos={ingredientes}
                   esSeccionIngredientes
                 />
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Paquetes producidos */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="flex items-center gap-2 text-lg font-semibold">
-                  <Package className="size-5 text-muted-foreground" />
-                  Paquetes producidos
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                    {paquetes.length}
-                  </span>
-                </h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  render={<Link href="/productos/nuevo" />}
-                >
-                  <Plus className="size-4" />
-                  Nuevo
-                </Button>
-              </div>
-              {paquetes.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  Los paquetes se crean al producir galletas
-                </p>
-              ) : (
-                <ProductoTable productos={paquetes} />
               )}
             </CardContent>
           </Card>

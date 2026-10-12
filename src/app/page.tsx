@@ -1,11 +1,19 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { DashboardCards } from '@/components/organisms/DashboardCards';
-import { IngresosVsEgresos } from '@/components/organisms/IngresosVsEgresos';
-import { UltimasVentas } from '@/components/organisms/UltimasVentas';
-import { InventarioRapido } from '@/components/organisms/InventarioRapido';
+import { IngresosPorMesChart } from '@/components/organisms/IngresosPorMesChart';
+import { VentasPorFuenteChart } from '@/components/organisms/VentasPorFuenteChart';
+import { ResumenMensualTable } from '@/components/organisms/ResumenMensualTable';
 import { PromediosSection } from '@/components/organisms/PromediosSection';
 import { FiltroMes } from '@/components/organisms/FiltroMes';
-import { agruparPromediosPorMes, promedioPrecioUnitario, unidadesDeVenta } from '@/lib/promedios';
+import {
+  agruparPromediosPorMes,
+  promedioPrecioUnitario,
+  serieIngresosMensuales,
+  unidadesDeVenta,
+} from '@/lib/promedios';
+import { agruparVentasPorFuente } from '@/lib/ventas';
+import { agruparResumenMensual } from '@/lib/resumen-mensual';
+import { calcularValorMateriales } from '@/lib/inventario';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,76 +40,43 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const supabase = createServiceClient();
 
-  // Fetch all data in parallel
   const [
-    { count: totalClientes },
-    ventasDelMes,
-    ingresos,
-    pendientes,
+    { data: ingresos },
     { data: gastos },
-    { data: ultimasVentas },
-    { data: productos },
     { data: ventasPromedios },
+    { data: productos },
   ] = await Promise.all([
-    supabase.from('clientes').select('*', { count: 'exact', head: true }),
     supabase
       .from('ventas')
-      .select('monto_total')
-      .gte('fecha', first)
-      .lte('fecha', last),
-    supabase
-      .from('ventas')
-      .select('monto_total, venta_productos(cantidad)')
+      .select('fecha, monto_total, venta_productos(cantidad), clientes(fuente)')
       .eq('estado', 'pagado')
       .gte('fecha', first)
       .lte('fecha', last),
     supabase
-      .from('ventas')
-      .select('monto_total')
-      .eq('estado', 'pendiente')
-      .gte('fecha', first)
-      .lte('fecha', last),
-    supabase
       .from('gastos')
-      .select('monto')
+      .select('monto, fecha, categoria')
       .gte('fecha', first)
       .lte('fecha', last),
-    supabase
-      .from('ventas')
-      .select('*, clientes(nombre)')
-      .gte('fecha', first)
-      .lte('fecha', last)
-      .order('fecha', { ascending: false })
-      .limit(5),
-    supabase
-      .from('productos')
-      .select('id, nombre, stock, gramos_restantes, unidad, costo')
-      .order('stock', { ascending: true }),
     supabase
       .from('ventas')
       .select('fecha, monto_total, venta_productos(cantidad, precio_unitario)')
       .eq('estado', 'pagado'),
+    // Valor actual del inventario de ingredientes (no depende del mes).
+    supabase
+      .from('productos')
+      .select('nombre, costo, costo_total, cantidad_comprada, gramos_restantes'),
   ]);
 
-  // Compute metrics
-  const ventasDelMesTotal =
-    ventasDelMes.data?.reduce((sum, v) => sum + Number(v.monto_total), 0) ?? 0;
   const ingresosTotal =
-    ingresos.data?.reduce((sum, v) => sum + Number(v.monto_total), 0) ?? 0;
-  const pendientesTotal =
-    pendientes.data?.reduce((sum, v) => sum + Number(v.monto_total), 0) ?? 0;
-  const egresosTotal =
-    gastos?.reduce((sum, g) => sum + Number(g.monto), 0) ?? 0;
+    ingresos?.reduce((sum, v) => sum + Number(v.monto_total), 0) ?? 0;
+  const egresosTotal = gastos?.reduce((sum, g) => sum + Number(g.monto), 0) ?? 0;
   const balanceNeto = ingresosTotal - egresosTotal;
 
   // Precio promedio por unidad desde las líneas reales; estima las unidades
   // de las ventas históricas que no tienen detalle (monto ÷ precio promedio).
   const precioPromedio = promedioPrecioUnitario(ventasPromedios ?? []);
   const unidadesVendidas =
-    ingresos.data?.reduce(
-      (sum, v) => sum + unidadesDeVenta(v, precioPromedio),
-      0
-    ) ?? 0;
+    ingresos?.reduce((sum, v) => sum + unidadesDeVenta(v, precioPromedio), 0) ?? 0;
 
   // Promedios mensuales de ingresos y unidades (todo el histórico); la
   // sección filtra por año por su cuenta.
@@ -109,6 +84,30 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     ventasPromedios ?? [],
     precioPromedio
   );
+
+  // Serie del gráfico de barras: 12 meses del año filtrado, o los últimos
+  // 12 meses con datos cuando no hay filtro de mes.
+  const serieIngresos = serieIngresosMensuales(
+    promediosPorMes,
+    mesVal ? mesVal.slice(0, 4) : null
+  );
+
+  // Ventas pagadas del período agrupadas por fuente del cliente.
+  const ventasPorFuente = agruparVentasPorFuente(
+    (ingresos ?? []) as unknown as {
+      clientes?: { fuente: string | null } | null;
+    }[]
+  );
+
+  // Resumen financiero por mes (ingreso, egreso, envíos, paquetes) para la tabla.
+  const resumenMensual = agruparResumenMensual(
+    ingresos ?? [],
+    gastos ?? [],
+    precioPromedio
+  );
+
+  // Dinero invertido en materia prima disponible (stock actual, sin filtro de mes).
+  const materiales = calcularValorMateriales(productos ?? []);
 
   return (
     <div className="space-y-8">
@@ -120,23 +119,26 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       </div>
 
       <DashboardCards
-        totalClientes={totalClientes ?? 0}
-        ventasDelMes={ventasDelMesTotal}
+        paquetesVendidos={unidadesVendidas}
         ingresosTotales={ingresosTotal}
-        pendientesTotal={pendientesTotal}
-        cantidadPendientes={pendientes.data?.length ?? 0}
+        egresosTotales={egresosTotal}
         balanceNeto={balanceNeto}
-        unidadesVendidas={unidadesVendidas}
+        materialesValor={materiales.valor}
+        materialesSinCosto={materiales.sinCosto}
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <IngresosVsEgresos ingresos={ingresosTotal} egresos={egresosTotal} />
-        <UltimasVentas ventas={ultimasVentas ?? []} />
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <IngresosPorMesChart serie={serieIngresos} mesDestacado={mesVal ?? null} />
+          <VentasPorFuenteChart datos={ventasPorFuente} />
+        </div>
+        <PromediosSection
+          data={promediosPorMes}
+          precioPromedio={precioPromedio}
+        />
       </div>
 
-      <PromediosSection data={promediosPorMes} precioPromedio={precioPromedio} />
-
-      <InventarioRapido productos={productos ?? []} />
+      <ResumenMensualTable filas={resumenMensual} />
     </div>
   );
 }
