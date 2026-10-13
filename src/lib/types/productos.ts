@@ -1,6 +1,9 @@
+export type TipoProducto = 'ingrediente' | 'paquete';
+
 export interface Producto {
   id: string;
   nombre: string;
+  tipo: TipoProducto;
   sku: string | null;
   /** Precio de venta: solo aplica a productos de receta (los ingredientes no se venden) */
   precio_venta: number | null;
@@ -22,6 +25,7 @@ export interface Producto {
 export type ProductoActionResult = {
   errors?: {
     nombre?: string[];
+    tipo?: string[];
     sku?: string[];
     precio_venta?: string[];
     costo?: string[];

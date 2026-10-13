@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { calcularValorMateriales } from '../inventario';
 
 // Nombres reales de ingredientes (según RECETAS) y de productos terminados.
-const ingrediente = (p: Record<string, unknown>) => ({ costo: null, costo_total: null, cantidad_comprada: null, gramos_restantes: null, ...p });
+const ingrediente = (p: Record<string, unknown>) => ({ tipo: 'ingrediente', costo: null, costo_total: null, cantidad_comprada: null, gramos_restantes: null, ...p });
 
 describe('calcularValorMateriales', () => {
   it('ignora productos que no son ingredientes (paquetes terminados)', () => {
     const result = calcularValorMateriales([
-      { nombre: 'Galleta Chocolate Blanco', costo: 1000, gramos_restantes: 5 },
+      { nombre: 'Galleta Chocolate Blanco', tipo: 'paquete', costo: 1000, gramos_restantes: 5 },
     ]);
     expect(result).toEqual({ valor: 0, sinCosto: 0 });
   });
@@ -55,7 +55,7 @@ describe('calcularValorMateriales', () => {
       }),
       ingrediente({ nombre: 'Canela', costo: 5, gramos_restantes: 10 }), // 50
       ingrediente({ nombre: 'Empaque', gramos_restantes: 10 }), // sin costo
-      { nombre: 'Galleta Receta 1', costo: 900, gramos_restantes: 3 }, // no aplica
+      { nombre: 'Galleta Receta 1', tipo: 'paquete', costo: 900, gramos_restantes: 3 }, // no aplica
     ]);
     expect(result).toEqual({ valor: 1050, sinCosto: 1 });
   });

@@ -3,7 +3,6 @@ import {
   RECETAS,
   buscarRecetaPorProducto,
   calcularCostoReceta,
-  esIngrediente,
 } from '../recetas';
 
 const receta1 = RECETAS.find((r) => r.id === 'receta-1')!;
@@ -19,24 +18,6 @@ describe('buscarRecetaPorProducto', () => {
 
   it('devuelve undefined para productos sin receta', () => {
     expect(buscarRecetaPorProducto('No existe')).toBeUndefined();
-  });
-});
-
-describe('esIngrediente', () => {
-  it('reconoce ingredientes de las recetas', () => {
-    expect(esIngrediente('Harina de almendra')).toBe(true);
-    expect(esIngrediente('Empaque')).toBe(true);
-  });
-
-  it('no marca como ingrediente a los productos terminados', () => {
-    expect(esIngrediente('Galleta Receta 1')).toBe(false);
-    expect(esIngrediente('Galleta Chocolate Blanco')).toBe(false);
-  });
-
-  it('maneja valores vacíos', () => {
-    expect(esIngrediente(null)).toBe(false);
-    expect(esIngrediente(undefined)).toBe(false);
-    expect(esIngrediente('')).toBe(false);
   });
 });
 

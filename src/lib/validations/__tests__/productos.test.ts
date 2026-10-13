@@ -26,6 +26,7 @@ describe('productoSchema costo por gramo', () => {
   it('acepta costo_total + cantidad_comprada en ingrediente', () => {
     const result = productoSchema.safeParse({
       nombre: 'Harina de almendra',
+      tipo: 'ingrediente',
       costo_total: '8725',
       cantidad_comprada: '1000',
       stock: '0',
@@ -41,6 +42,7 @@ describe('productoSchema costo por gramo', () => {
   it('rechaza costo_total sin cantidad comprada', () => {
     const result = productoSchema.safeParse({
       nombre: 'Harina de almendra',
+      tipo: 'ingrediente',
       costo_total: '8725',
       cantidad_comprada: '',
       stock: '0',
@@ -55,6 +57,7 @@ describe('productoSchema costo por gramo', () => {
   it('acepta costo manual en producto terminado', () => {
     const result = productoSchema.safeParse({
       nombre: 'Galleta Receta 1',
+      tipo: 'paquete',
       precio_venta: '1600',
       costo: '1080',
       stock: '0',
@@ -71,6 +74,7 @@ describe('productoSchema gramos restantes', () => {
   it('acepta gramos con decimales en ingrediente', () => {
     const result = productoSchema.safeParse({
       nombre: 'Harina de almendra',
+      tipo: 'ingrediente',
       gramos_restantes: '987.55',
       stock: '0',
     });
@@ -83,6 +87,7 @@ describe('productoSchema gramos restantes', () => {
   it('permite gramos en null cuando no se cargan', () => {
     const result = productoSchema.safeParse({
       nombre: 'Galleta Receta 1',
+      tipo: 'paquete',
       precio_venta: '1600',
       costo: '1080',
     });
@@ -95,6 +100,7 @@ describe('productoSchema gramos restantes', () => {
   it('rechaza gramos negativos', () => {
     const result = productoSchema.safeParse({
       nombre: 'Harina de almendra',
+      tipo: 'ingrediente',
       gramos_restantes: '-5',
     });
     expect(result.success).toBe(false);
@@ -107,6 +113,7 @@ describe('productoSchema gramos restantes', () => {
   it('ya no incluye los campos paquete ni descripcion', () => {
     const { success, data } = productoSchema.safeParse({
       nombre: 'Galleta Receta 1',
+      tipo: 'paquete',
       precio_venta: '1600',
       costo: '1080',
     });

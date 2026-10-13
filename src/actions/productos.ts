@@ -1,7 +1,6 @@
 'use server';
 
 import { createServiceClient } from '@/lib/supabase/server';
-import { esIngrediente } from '@/lib/recetas';
 import { calcularCostoRecetaProducto } from '@/lib/costoReceta';
 import {
   productoCreateSchema,
@@ -144,7 +143,7 @@ export async function ajustarStock(
 
   const { data: producto, error: fetchError } = await supabase
     .from('productos')
-    .select('id, nombre, stock, gramos_restantes')
+    .select('id, nombre, tipo, stock, gramos_restantes')
     .eq('id', productoId)
     .single();
 
@@ -152,7 +151,7 @@ export async function ajustarStock(
     return { success: false, error: 'Producto no encontrado' };
   }
 
-  const esIngredienteProducto = esIngrediente(producto.nombre);
+  const esIngredienteProducto = producto.tipo === 'ingrediente';
   const update: Record<string, unknown> = esIngredienteProducto
     ? {
         gramos_restantes:

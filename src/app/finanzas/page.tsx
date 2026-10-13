@@ -84,7 +84,7 @@ export default async function FinanzasPage({ searchParams }: FinanzasPageProps) 
   // Valor actual del inventario de ingredientes (no depende del mes filtrado).
   const { data: productosData } = await supabase
     .from('productos')
-    .select('nombre, costo, costo_total, cantidad_comprada, gramos_restantes');
+    .select('nombre, tipo, costo, costo_total, cantidad_comprada, gramos_restantes');
   const materiales = calcularValorMateriales(productosData ?? []);
 
   // Fetch paid sales with products for monthly margin

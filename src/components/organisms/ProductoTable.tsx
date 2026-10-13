@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
-import { esIngrediente, sufijoStock } from '@/lib/recetas';
+import { sufijoStock } from '@/lib/recetas';
 import type { Producto } from '@/lib/types/productos';
 import { Eye, Pencil } from 'lucide-react';
 
@@ -80,7 +80,7 @@ export function ProductoTable({
                 {producto.costo != null ? (
                   <>
                     {formatCurrency(producto.costo)}
-                    {esIngrediente(producto.nombre) && (
+                    {producto.tipo === 'ingrediente' && (
                       <span className="ml-0.5 text-xs text-muted-foreground/50">
                         /g
                       </span>

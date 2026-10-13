@@ -64,7 +64,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     // Valor actual del inventario de ingredientes (no depende del mes).
     supabase
       .from('productos')
-      .select('nombre, costo, costo_total, cantidad_comprada, gramos_restantes'),
+      .select('nombre, tipo, costo, costo_total, cantidad_comprada, gramos_restantes'),
   ]);
 
   const ingresosTotal =

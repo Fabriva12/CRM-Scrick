@@ -50,6 +50,7 @@ const gramosOpcional = z
 
 const productoBaseSchema = z.object({
   nombre: z.string().min(1, 'Nombre es requerido').max(256),
+  tipo: z.enum(['ingrediente', 'paquete']),
   sku: z.string().max(50).optional().nullable().default(null),
   precio_venta: montoOpcional.pipe(
     z

@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ajustarStock } from '@/actions/productos';
-import { esIngrediente, sufijoStock } from '@/lib/recetas';
+import { sufijoStock } from '@/lib/recetas';
 import type { Producto } from '@/lib/types/productos';
 import { PackagePlus } from 'lucide-react';
 
@@ -48,7 +48,7 @@ export function AjustarStockDialog({
 
   const producto = productos.find((p) => p.id === productoId);
   const esIngredienteProducto = producto
-    ? esIngrediente(producto.nombre)
+    ? producto.tipo === 'ingrediente'
     : false;
   const unidad = esIngredienteProducto
     ? unidadGramos
@@ -121,7 +121,7 @@ export function AjustarStockDialog({
               className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               {productos.map((p) => {
-                const esIng = esIngrediente(p.nombre);
+                const esIng = p.tipo === 'ingrediente';
                 const cantidadActual = esIng
                   ? formatGramos(p.gramos_restantes)
                   : String(p.stock);

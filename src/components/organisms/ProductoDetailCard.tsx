@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { DetailRow } from '@/components/molecules/DetailRow';
 import { formatCurrency } from '@/lib/format';
-import { esIngrediente, sufijoStock } from '@/lib/recetas';
+import { sufijoStock } from '@/lib/recetas';
 import type { Producto } from '@/lib/types/productos';
 import { ArrowLeft, Pencil } from 'lucide-react';
 
@@ -34,7 +34,7 @@ function formatGramos(value: number) {
 }
 
 export function ProductoDetailCard({ producto }: ProductoDetailCardProps) {
-  const esIngredienteProducto = esIngrediente(producto.nombre);
+  const esIngredienteProducto = producto.tipo === 'ingrediente';
   const formatoPorGramo = new Intl.NumberFormat('es-CR', {
     style: 'currency',
     currency: 'CRC',

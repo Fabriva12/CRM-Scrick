@@ -1,7 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { HistorialProduccion } from '@/components/organisms/HistorialProduccion';
 import { ProduccionActionButtons } from '@/components/organisms/ProduccionActionButtons';
-import { esIngrediente, sufijoStock } from '@/lib/recetas';
+import { sufijoStock } from '@/lib/recetas';
 import type { HistorialConProducto } from '@/lib/types/produccion';
 import { CookingPot } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,9 +20,7 @@ export default async function InventarioPage() {
   }
 
   // Paquetes producidos = todo lo que no es ingrediente
-  const paquetes = (productos ?? []).filter(
-    (p) => !esIngrediente(p.nombre)
-  );
+  const paquetes = (productos ?? []).filter((p) => p.tipo === 'paquete');
 
   const { data: historial, error: histError } = await supabase
     .from('produccion_historial')

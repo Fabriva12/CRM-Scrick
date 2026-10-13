@@ -11,9 +11,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { esIngrediente, buscarRecetaPorProducto, calcularCostoReceta } from '@/lib/recetas';
+import { buscarRecetaPorProducto, calcularCostoReceta } from '@/lib/recetas';
 import { calcularCostoPorGramo } from '@/lib/validations/productos';
-import type { Producto, ProductoActionResult } from '@/lib/types/productos';
+import type {
+  Producto,
+  ProductoActionResult,
+  TipoProducto,
+} from '@/lib/types/productos';
 
 interface ProductoFormProps {
   producto?: Producto;
@@ -36,7 +40,10 @@ function FieldError({ error }: { error?: string[] | null }) {
 
 export function ProductoForm({ producto, action, costosIngredientes }: ProductoFormProps) {
   const [state, formAction, isPending] = useActionState(action, null);
-  const esIngredienteProducto = esIngrediente(producto?.nombre);
+  const [tipo, setTipo] = useState<TipoProducto>(
+    producto?.tipo ?? 'ingrediente'
+  );
+  const esIngredienteProducto = tipo === 'ingrediente';
 
   // Paquete con receta: el costo sale de la fórmula (suma de cantidad ×
   // costo por gramo de cada ingrediente). Solo se muestra en edición, cuando
@@ -104,6 +111,24 @@ export function ProductoForm({ producto, action, costosIngredientes }: ProductoF
                 required
               />
               <FieldError error={state?.errors?.nombre} />
+            </div>
+
+            {/* Tipo: define si es ingrediente o paquete producido */}
+            <div>
+              <Label htmlFor="tipo">
+                Tipo <span className="text-destructive">*</span>
+              </Label>
+              <select
+                id="tipo"
+                name="tipo"
+                value={tipo}
+                onChange={(e) => setTipo(e.target.value as TipoProducto)}
+                className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="ingrediente">Ingrediente</option>
+                <option value="paquete">Paquete / Producto</option>
+              </select>
+              <FieldError error={state?.errors?.tipo} />
             </div>
 
             {/* Precio de venta: solo productos de receta, no ingredientes */}

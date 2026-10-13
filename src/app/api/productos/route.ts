@@ -20,7 +20,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const result = productoCreateSchema.safeParse(body);
+  // El `tipo` es obligatorio en el esquema; para clientes que aún no lo envían
+  // se asume 'paquete', que es el comportamiento por defecto de la base.
+  const result = productoCreateSchema.safeParse({ tipo: 'paquete', ...body });
 
   if (!result.success) {
     return NextResponse.json(

@@ -1,9 +1,10 @@
-import { esIngrediente } from '@/lib/recetas';
 import { calcularCostoPorGramo } from '@/lib/validations/productos';
+import type { TipoProducto } from '@/lib/types/productos';
 
 /** Campos mínimos de un producto para valorar los materiales en stock. */
 export interface ProductoInventario {
   nombre: string;
+  tipo: TipoProducto;
   /** Ingredientes: costo por gramo calculado (fallback si falta costo_total/cantidad_comprada) */
   costo?: number | null;
   /** Ingredientes: cuánto pagó por la compra (₡) */
@@ -29,7 +30,7 @@ export function calcularValorMateriales(
   let sinCosto = 0;
 
   for (const producto of productos) {
-    if (!esIngrediente(producto.nombre)) continue;
+    if (producto.tipo !== 'ingrediente') continue;
 
     const costoPorGramo =
       calcularCostoPorGramo(producto.costo_total, producto.cantidad_comprada) ??

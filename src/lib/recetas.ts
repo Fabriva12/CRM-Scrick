@@ -66,14 +66,6 @@ export function buscarRecetaPorProducto(
   return RECETAS.find((r) => r.producto_nombre === nombreProducto);
 }
 
-/** True si el nombre corresponde a un ingrediente de alguna receta. */
-export function esIngrediente(nombre: string | null | undefined): boolean {
-  if (!nombre) return false;
-  return RECETAS.some((r) =>
-    r.ingredientes.some((ing) => ing.nombre === nombre)
-  );
-}
-
 /**
  * Unidad de venta de un producto con receta para mostrar en stock:
  * 'paq' si la receta se vende por paquete, 'galleta' si se vende por

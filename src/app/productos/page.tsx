@@ -2,7 +2,6 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { ProductoTable } from '@/components/organisms/ProductoTable';
 import { AjustarStockButton } from '@/components/organisms/AjustarStockButton';
 import { ExportButton } from '@/components/molecules/ExportButton';
-import { esIngrediente } from '@/lib/recetas';
 import type { Producto } from '@/lib/types/productos';
 import { Package, Wheat } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,10 +24,10 @@ export default async function ProductosPage() {
 
   const typedProductos = productos as unknown as Producto[];
   const ingredientes = typedProductos
-    .filter((p) => esIngrediente(p.nombre))
+    .filter((p) => p.tipo === 'ingrediente')
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
   const paquetes = typedProductos
-    .filter((p) => !esIngrediente(p.nombre))
+    .filter((p) => p.tipo === 'paquete')
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
   const sinDatos = typedProductos.length === 0;
@@ -68,7 +67,7 @@ export default async function ProductosPage() {
             <Package className="mb-4 size-12 text-muted-foreground/40" />
             <p className="mb-2 text-lg font-medium">No hay productos registrados</p>
             <p className="mb-6 text-sm text-muted-foreground">
-              Creá los ingredientes con el nombre exacto de cada receta; los
+              Creá los ingredientes indicando el tipo en el formulario; los
               paquetes se crean al producir galletas.
             </p>
             <Button render={<Link href="/productos/nuevo" />}>

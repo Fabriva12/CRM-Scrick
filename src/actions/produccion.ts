@@ -137,6 +137,7 @@ export async function producir(
       .from('productos')
       .insert({
         nombre: receta.producto_nombre,
+        tipo: 'paquete',
         precio_venta: 1,
         costo: costoUnidad,
         stock: cantidad,
